@@ -35,13 +35,27 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   const [customUrl, setCustomUrl] = useState("");
   const [customKey, setCustomKey] = useState("");
 
+  const isPlaceholderUrl = (url: string) => {
+    return !url || url.includes("placeholder-url") || !url.startsWith("http");
+  };
+
   useEffect(() => {
+    let savedUrl = "";
+    let savedKey = "";
     if (typeof window !== "undefined") {
-      setCustomUrl(localStorage.getItem("custom_supabase_url") || "");
-      setCustomKey(localStorage.getItem("custom_supabase_key") || "");
+      savedUrl = localStorage.getItem("custom_supabase_url") || "";
+      savedKey = localStorage.getItem("custom_supabase_key") || "";
+      setCustomUrl(savedUrl);
+      setCustomKey(savedKey);
     }
+
+    const currentUrl = savedUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    if (isPlaceholderUrl(currentUrl)) {
+      setShowConfig(true); // Auto-open config box if URL is placeholder!
+    }
+
     generateNewQuestion();
-    fetchLeaderboard();
+    fetchLeaderboard(savedUrl, savedKey);
   }, []);
 
   const generateNewQuestion = () => {
@@ -66,9 +80,15 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
     setFeedback(null);
   };
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (urlVal?: string, keyVal?: string) => {
+    const activeUrl = urlVal ?? customUrl;
+    const activeKey = keyVal ?? customKey;
+    if (isPlaceholderUrl(activeUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "")) {
+      return;
+    }
+
     try {
-      const client = getSupabaseClient(customUrl, customKey);
+      const client = getSupabaseClient(activeUrl, activeKey);
       const { data, error } = await client
         .from("student_scores")
         .select("*")
@@ -78,11 +98,9 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
       if (!error && data) {
         setLeaderboard(data);
         setErrorMessage(null);
-      } else if (error) {
-        console.log("Supabase fetch notice:", error);
       }
     } catch (err: any) {
-      console.log("Supabase error:", err);
+      console.log("Supabase fetch notice:", err);
     }
   };
 
@@ -121,6 +139,13 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   };
 
   const handleSaveScoreToSupabase = async () => {
+    const activeUrl = customUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    if (isPlaceholderUrl(activeUrl)) {
+      setShowConfig(true);
+      setErrorMessage("⚠️ Supabase 주소(URL)가 설정되지 않았습니다. 아래 'API 설정' 창에 본인의 Supabase URL과 Anon Key를 입력해 주세요!");
+      return;
+    }
+
     if (!studentName.trim()) {
       alert("학생 이름을 먼저 입력해주세요!");
       return;
@@ -159,12 +184,17 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   };
 
   const handleSaveConfig = () => {
+    if (!customUrl.trim() || !customKey.trim()) {
+      alert("Supabase URL과 Anon Key를 모두 입력해주세요!");
+      return;
+    }
     if (typeof window !== "undefined") {
       localStorage.setItem("custom_supabase_url", customUrl.trim());
       localStorage.setItem("custom_supabase_key", customKey.trim());
-      alert("Supabase API 정보가 저장되었습니다!");
+      alert("Supabase API 연동 정보가 정상 저장되었습니다!");
       setShowConfig(false);
-      fetchLeaderboard();
+      setErrorMessage(null);
+      fetchLeaderboard(customUrl.trim(), customKey.trim());
     }
   };
 
@@ -190,10 +220,10 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowConfig(!showConfig)}
-            className="flex items-center gap-1.5 bg-gray-100 border border-[#5C3A21]/30 text-[#5C3A21] px-3 py-1.5 rounded-full font-bold text-xs hover:bg-gray-200"
+            className="flex items-center gap-1.5 bg-[#5C3A21] text-white px-3.5 py-1.5 rounded-full font-bold text-xs hover:scale-105 transition-transform"
           >
             <Settings size={14} />
-            <span>API 설정</span>
+            <span>⚙️ Supabase API 연동 설정</span>
           </button>
           <div className="flex items-center gap-2 bg-pastel-pink border border-[#5C3A21]/30 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
             <Database size={18} />
@@ -204,34 +234,35 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
 
       {/* Supabase API Quick Config Settings (Collapsible) */}
       {showConfig && (
-        <div className="w-full bg-amber-50 border-2 border-[#5C3A21] p-5 rounded-2xl flex flex-col gap-3">
-          <h4 className="font-bold text-[#5C3A21] text-sm flex items-center gap-2">
-            <Settings size={16} />
-            <span>Supabase 프로젝트 API 연결 직접 설정</span>
+        <div className="w-full bg-amber-50 border-3 border-[#5C3A21] p-5 rounded-2xl flex flex-col gap-3 shadow-md">
+          <h4 className="font-bold text-[#5C3A21] text-base flex items-center gap-2">
+            <Settings size={18} />
+            <span>🔑 Supabase Project URL 및 Anon Key 입력</span>
           </h4>
-          <p className="text-xs text-gray-700">
-            Vercel 환경변수가 설정되지 않은 경우 아래에 Supabase URL과 anon key를 직접 입력할 수 있습니다.
+          <p className="text-xs text-gray-700 font-medium leading-relaxed">
+            Vercel 환경변수에 Supabase 정보가 등록되지 않아 임시 주소(<code className="bg-amber-100 px-1 font-mono text-rose-600">placeholder-url</code>)가 사용 중이었습니다.<br />
+            Supabase 대시보드 (<strong>Project Settings ➡️ API</strong>)에서 <strong>Project URL</strong>과 <strong>anon public key</strong>를 아래에 붙여넣어 주세요!
           </p>
           <div className="flex flex-col gap-2">
             <input
               type="text"
-              placeholder="Supabase Project URL (https://xxxx.supabase.co)"
+              placeholder="예: https://xxxxxx.supabase.co"
               value={customUrl}
               onChange={(e) => setCustomUrl(e.target.value)}
-              className="text-xs p-2.5 rounded-xl border border-gray-300 w-full"
+              className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black"
             />
             <input
               type="text"
-              placeholder="Supabase Anon Key (eyJhbG...)"
+              placeholder="예: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
               value={customKey}
               onChange={(e) => setCustomKey(e.target.value)}
-              className="text-xs p-2.5 rounded-xl border border-gray-300 w-full"
+              className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black"
             />
             <button
               onClick={handleSaveConfig}
-              className="bg-[#5C3A21] text-white text-xs font-bold py-2 rounded-xl hover:scale-102 transition-transform"
+              className="bg-[#5C3A21] text-white text-xs font-bold py-2.5 rounded-xl hover:scale-102 transition-transform"
             >
-              설정 저장하기
+              연동 정보 입력하고 연결하기 🚀
             </button>
           </div>
         </div>
@@ -343,9 +374,6 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
             <div className="flex flex-col gap-1">
               <span>{errorMessage}</span>
-              <span className="text-[11px] font-normal text-rose-600">
-                💡 팁: SQL Editor에서 RLS를 비활성화하거나 오른쪽 상단 'API 설정' 버튼을 눌러 Supabase URL과 Key를 확인해보세요!
-              </span>
             </div>
           </div>
         )}
@@ -357,7 +385,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               <Trophy size={14} className="text-yellow-600" />
               <span>Supabase 실시간 명예의 전당 (Top 5)</span>
             </span>
-            <button onClick={fetchLeaderboard} className="hover:rotate-180 transition-transform">
+            <button onClick={() => fetchLeaderboard()} className="hover:rotate-180 transition-transform">
               <RefreshCw size={14} />
             </button>
           </div>
@@ -377,7 +405,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               ))
             ) : (
               <span className="text-xs text-gray-500 text-center py-2">
-                아직 저장된 점수가 없거나 DB 연결 준비 중입니다.
+                아직 저장된 점수가 없거나 API 연동을 기다리는 중입니다.
               </span>
             )}
           </div>
