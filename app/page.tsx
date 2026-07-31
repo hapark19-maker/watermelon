@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database } from "lucide-react";
+import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database, Zap } from "lucide-react";
 import SieveOfEratosthenes from "@/components/SieveOfEratosthenes";
 import MathQuiz from "@/components/MathQuiz";
 import ShapeExplorer from "@/components/ShapeExplorer";
 import WaterGraphActivity from "@/components/WaterGraphActivity";
 import IntegerQuizActivity from "@/components/IntegerQuizActivity";
+import JumpGameActivity from "@/components/JumpGameActivity";
 
 export default function Home() {
-  const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | null>(null);
+  const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | "jump-game" | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 gap-8">
@@ -44,7 +45,7 @@ export default function Home() {
             <section className="w-full bg-pastel-mint p-8 sm:p-10 rounded-3xl shadow-lg text-center flex flex-col items-center gap-3 border-none">
               <div className="bg-white/30 text-white font-bold px-4 py-1 rounded-full text-sm inline-flex items-center gap-1.5 shadow-xs">
                 <Sparkles size={16} />
-                <span>Supabase 데이터베이스 연동 완료</span>
+                <span>신나는 플래시 장애물 점프 게임 출시</span>
               </div>
               <h2 className="text-3xl sm:text-4xl text-white font-bold tracking-wide">
                 안녕! 현아의 수학교실에 온 걸 환영해! 👋
@@ -62,7 +63,7 @@ export default function Home() {
               <span className="text-sm font-bold text-gray-600">카드를 누르면 시작돼요!</span>
             </div>
 
-            {/* Card News Grid */}
+            {/* Card News Grid: 3 columns per row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
               {/* Card 1: Sieve of Eratosthenes */}
               <div
@@ -164,7 +165,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 5: Integer Arithmetic Quiz (Supabase Database Integrated) */}
+              {/* Card 5: Integer Arithmetic Quiz */}
               <div
                 onClick={() => setActiveActivity("integer-quiz")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
@@ -188,6 +189,31 @@ export default function Home() {
                   <ArrowRight size={18} />
                 </div>
               </div>
+
+              {/* Card 6: Flash Jump Game */}
+              <div
+                onClick={() => setActiveActivity("jump-game")}
+                className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+              >
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="bg-pastel-mint text-[#5C3A21] border border-[#5C3A21]/30 px-3.5 py-1 rounded-full text-xs font-bold">
+                      활동 6 (신규 플래시 게임)
+                    </span>
+                    <Zap size={24} className="text-pastel-mint fill-pastel-mint" />
+                  </div>
+                  <h4 className="text-2xl font-bold tracking-wide text-black">
+                    달리기 트랙 점프 왕 🏃‍♂️🪨
+                  </h4>
+                  <p className="text-gray-700 text-sm font-medium leading-relaxed">
+                    달리기 트랙을 달리며 스페이스바나 터치로 돌맹이를 뛰어넘고 상위 3등 랭킹에 도전하세요!
+                  </p>
+                </div>
+                <div className="flex items-center justify-between font-bold bg-pastel-mint/30 text-[#5C3A21] p-3.5 rounded-2xl border border-[#5C3A21]/30 group-hover:bg-[#5C3A21] group-hover:text-white transition-colors duration-200">
+                  <span>점프 게임 시작하기</span>
+                  <ArrowRight size={18} />
+                </div>
+              </div>
             </div>
           </>
         ) : (
@@ -207,6 +233,7 @@ export default function Home() {
             {activeActivity === "shape" && <ShapeExplorer onBack={() => setActiveActivity(null)} />}
             {activeActivity === "water-graph" && <WaterGraphActivity onBack={() => setActiveActivity(null)} />}
             {activeActivity === "integer-quiz" && <IntegerQuizActivity onBack={() => setActiveActivity(null)} />}
+            {activeActivity === "jump-game" && <JumpGameActivity onBack={() => setActiveActivity(null)} />}
           </div>
         )}
       </main>
