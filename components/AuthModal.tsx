@@ -10,22 +10,84 @@ interface AuthModalProps {
   onLoginSuccess: (user: { email: string; nickname: string }) => void;
 }
 
+// Student ID Validator (5 digits: Grade 1..3, Class 1..12/11, Number 1..35)
+const validateStudentIdNumber = (idStr: string): boolean => {
+  const clean = idStr.trim();
+  if (clean.length !== 5 || !/^\d{5}$/.test(clean)) return false;
+
+  const grade = parseInt(clean[0], 10);
+  const classNum = parseInt(clean.slice(1, 3), 10);
+  const studentNum = parseInt(clean.slice(3, 5), 10);
+
+  if (grade < 1 || grade > 3) return false;
+
+  if (grade === 1 || grade === 3) {
+    if (classNum < 1 || classNum > 12) return false;
+  } else if (grade === 2) {
+    if (classNum < 1 || classNum > 11) return false;
+  }
+
+  if (studentNum < 1 || studentNum > 35) return false;
+
+  return true;
+};
+
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [studentIdNumber, setStudentIdNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [studentIdError, setStudentIdError] = useState<string | null>(null);
+  const [passwordConfirmError, setPasswordConfirmError] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   if (!isOpen) return null;
 
+  const handleStudentIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setStudentIdNumber(val);
+
+    if (val.trim().length > 0) {
+      if (!validateStudentIdNumber(val)) {
+        setStudentIdError("학번이 정확하지 않습니다.");
+      } else {
+        setStudentIdError(null);
+      }
+    } else {
+      setStudentIdError(null);
+    }
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setConfirmPassword(val);
+    if (isSignUp && password && val !== password) {
+      setPasswordConfirmError("비밀번호가 일치하지 않습니다.");
+    } else {
+      setPasswordConfirmError(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentIdNumber || !password) {
-      setMessage({ type: "error", text: "학번과 비밀번호를 입력해주세요!" });
+
+    // 1. Validate Student ID Number
+    if (!validateStudentIdNumber(studentIdNumber)) {
+      setStudentIdError("학번이 정확하지 않습니다.");
+      setMessage({ type: "error", text: "학번 양식을 확인해주세요! (예: 10101)" });
       return;
     }
+
+    // 2. Validate Password Match on Sign Up
+    if (isSignUp && password !== confirmPassword) {
+      setPasswordConfirmError("비밀번호가 일치하지 않습니다.");
+      setMessage({ type: "error", text: "비밀번호 확인이 일치하지 않습니다." });
+      return;
+    }
+
     if (isSignUp && !name) {
       setMessage({ type: "error", text: "이름을 입력해주세요!" });
       return;
@@ -34,8 +96,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
     setLoading(true);
     setMessage(null);
 
-    const cleanStudentId = studentIdNumber.trim().replace(/\s+/g, "");
-    const emailFormat = cleanStudentId.includes("@") ? cleanStudentId : `${cleanStudentId}@student.math`;
+    const cleanStudentId = studentIdNumber.trim();
+    const emailFormat = `${cleanStudentId}@student.math`;
     const displayName = name.trim() || cleanStudentId;
 
     try {
@@ -99,7 +161,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-md p-6 sm:p-8 rounded-3xl border-3 border-[#5C3A21] shadow-2xl relative flex flex-col gap-6 select-none">
+      <div className="bg-white w-full max-w-md p-6 sm:p-8 rounded-3xl border-3 border-[#5C3A21] shadow-2xl relative flex flex-col gap-6 select-none max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -122,6 +184,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
             onClick={() => {
               setIsSignUp(false);
               setMessage(null);
+              setStudentIdError(null);
+              setPasswordConfirmError(null);
             }}
             className={`flex-1 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 ${
               !isSignUp ? "bg-[#5C3A21] text-white shadow-xs" : "text-gray-600 hover:text-gray-900"
@@ -134,6 +198,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
             onClick={() => {
               setIsSignUp(true);
               setMessage(null);
+              setStudentIdError(null);
+              setPasswordConfirmError(null);
             }}
             className={`flex-1 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 ${
               isSignUp ? "bg-[#5C3A21] text-white shadow-xs" : "text-gray-600 hover:text-gray-900"
@@ -159,18 +225,28 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
             </div>
           )}
 
+          {/* Student ID Number Input */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-[#5C3A21]">학번</label>
+            <label className="text-xs font-bold text-[#5C3A21]">학번 (예: 10101)</label>
             <input
               type="text"
-              placeholder="예: 10101"
+              placeholder="예: 10101 (1학년 1반 1번)"
+              maxLength={5}
               value={studentIdNumber}
-              onChange={(e) => setStudentIdNumber(e.target.value)}
-              className="p-3 rounded-xl border-2 border-[#5C3A21] text-sm text-black font-medium focus:outline-none focus:ring-2 focus:ring-pastel-pink"
+              onChange={handleStudentIdChange}
+              className={`p-3 rounded-xl border-2 text-sm text-black font-medium focus:outline-none focus:ring-2 ${
+                studentIdError ? "border-rose-500 focus:ring-rose-400" : "border-[#5C3A21] focus:ring-pastel-pink"
+              }`}
               required
             />
+            {studentIdError && (
+              <span className="text-xs font-bold text-rose-500 pl-1 animate-pulse">
+                {studentIdError}
+              </span>
+            )}
           </div>
 
+          {/* Password Input */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-[#5C3A21]">비밀번호 (6자리 이상)</label>
             <input
@@ -182,6 +258,28 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
               required
             />
           </div>
+
+          {/* Confirm Password Input (Sign Up Only) */}
+          {isSignUp && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[#5C3A21]">비밀번호 확인</label>
+              <input
+                type="password"
+                placeholder="비밀번호 재입력"
+                value={confirmPassword}
+                onChange={handleConfirmPasswordChange}
+                className={`p-3 rounded-xl border-2 text-sm text-black font-medium focus:outline-none focus:ring-2 ${
+                  passwordConfirmError ? "border-rose-500 focus:ring-rose-400" : "border-[#5C3A21] focus:ring-pastel-pink"
+                }`}
+                required
+              />
+              {passwordConfirmError && (
+                <span className="text-xs font-bold text-rose-500 pl-1 animate-pulse">
+                  {passwordConfirmError}
+                </span>
+              )}
+            </div>
+          )}
 
           {message && (
             <div
@@ -198,8 +296,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-pastel-pink border-2 border-[#5C3A21] text-white font-bold py-3.5 rounded-full text-base shadow-md hover:scale-105 transition-transform duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-60"
+            disabled={loading || !!studentIdError || (isSignUp && !!passwordConfirmError)}
+            className="w-full bg-pastel-pink border-2 border-[#5C3A21] text-white font-bold py-3.5 rounded-full text-base shadow-md hover:scale-105 transition-transform duration-200 mt-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
           >
             {isSignUp ? <UserPlus size={18} /> : <LogIn size={18} />}
             <span>{loading ? "처리 중..." : isSignUp ? "회원가입 완료하기 ✨" : "로그인하기 🔑"}</span>
