@@ -35,10 +35,6 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   const [customUrl, setCustomUrl] = useState("");
   const [customKey, setCustomKey] = useState("");
 
-  const isPlaceholderUrl = (url: string) => {
-    return !url || url.includes("placeholder-url") || !url.startsWith("http");
-  };
-
   useEffect(() => {
     let savedUrl = "";
     let savedKey = "";
@@ -49,15 +45,8 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
       setCustomKey(savedKey);
     }
 
-    const currentUrl = savedUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    if (isPlaceholderUrl(currentUrl)) {
-      setShowConfig(true);
-    }
-
     generateNewQuestion();
-    if (!isPlaceholderUrl(currentUrl)) {
-      fetchLeaderboard(savedUrl, savedKey);
-    }
+    fetchLeaderboard(savedUrl, savedKey);
   }, []);
 
   const generateNewQuestion = () => {
@@ -85,9 +74,6 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   const fetchLeaderboard = async (urlVal?: string, keyVal?: string) => {
     const activeUrl = urlVal ?? customUrl;
     const activeKey = keyVal ?? customKey;
-    if (isPlaceholderUrl(activeUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "")) {
-      return;
-    }
 
     try {
       const client = getSupabaseClient(activeUrl, activeKey);
@@ -141,13 +127,6 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   };
 
   const handleSaveScoreToSupabase = async () => {
-    const activeUrl = customUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    if (isPlaceholderUrl(activeUrl)) {
-      setShowConfig(true);
-      setErrorMessage("Supabase Project URL 및 Anon Key가 입력되지 않았습니다. 아래 입력창에 진짜 Supabase 정보를 입력해 주세요!");
-      return;
-    }
-
     if (!studentName.trim()) {
       alert("학생 이름을 먼저 입력해주세요!");
       return;
@@ -229,7 +208,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
           </button>
           <div className="flex items-center gap-2 bg-pastel-pink border border-[#5C3A21]/30 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
             <Database size={18} />
-            <span>Supabase DB 연동</span>
+            <span>Supabase DB 자동연동 완료</span>
           </div>
         </div>
       </div>
@@ -239,18 +218,14 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
         <div className="w-full bg-amber-50 border-3 border-[#5C3A21] p-5 rounded-2xl flex flex-col gap-3 shadow-md">
           <h4 className="font-bold text-[#5C3A21] text-base flex items-center gap-2">
             <Settings size={18} />
-            <span>🔑 내 Supabase API 주소 & Key 1초 입력</span>
+            <span>🔑 Supabase Project URL 및 Anon Key 변경 설정</span>
           </h4>
-          <p className="text-xs text-gray-700 font-medium leading-relaxed">
-            Supabase 대시보드 (<strong>https://supabase.com/dashboard</strong> ➡️ 내 프로젝트 선택 ➡️ <strong>Project Settings ➡️ API</strong>)에서 
-            <strong>Project URL</strong>과 <strong>anon public key</strong>를 복사해 아래에 넣어주세요!
-          </p>
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-bold text-[#5C3A21]">1. Project URL:</span>
               <input
                 type="text"
-                placeholder="예: https://abcdefghijklm.supabase.co"
+                placeholder="https://haxffmxrfmrhrwfhybbj.supabase.co"
                 value={customUrl}
                 onChange={(e) => setCustomUrl(e.target.value)}
                 className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black bg-white"
@@ -260,7 +235,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               <span className="text-xs font-bold text-[#5C3A21]">2. Anon Key:</span>
               <input
                 type="text"
-                placeholder="예: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 value={customKey}
                 onChange={(e) => setCustomKey(e.target.value)}
                 className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black bg-white"
@@ -270,7 +245,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               onClick={handleSaveConfig}
               className="bg-[#5C3A21] text-white text-xs font-bold py-3 rounded-xl hover:scale-102 transition-transform mt-1"
             >
-              연동 정보 저장하고 연결하기 🚀
+              연동 정보 저장 🚀
             </button>
           </div>
         </div>
@@ -413,7 +388,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               ))
             ) : (
               <span className="text-xs text-gray-500 text-center py-2">
-                아직 저장된 점수가 없거나 API 연동을 기다리는 중입니다.
+                아직 저장된 점수가 없습니다. 첫 번째 점수를 기록해보세요!
               </span>
             )}
           </div>
