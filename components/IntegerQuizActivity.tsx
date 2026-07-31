@@ -51,11 +51,13 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
 
     const currentUrl = savedUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     if (isPlaceholderUrl(currentUrl)) {
-      setShowConfig(true); // Auto-open config box if URL is placeholder!
+      setShowConfig(true);
     }
 
     generateNewQuestion();
-    fetchLeaderboard(savedUrl, savedKey);
+    if (!isPlaceholderUrl(currentUrl)) {
+      fetchLeaderboard(savedUrl, savedKey);
+    }
   }, []);
 
   const generateNewQuestion = () => {
@@ -142,7 +144,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
     const activeUrl = customUrl || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     if (isPlaceholderUrl(activeUrl)) {
       setShowConfig(true);
-      setErrorMessage("⚠️ Supabase 주소(URL)가 설정되지 않았습니다. 아래 'API 설정' 창에 본인의 Supabase URL과 Anon Key를 입력해 주세요!");
+      setErrorMessage("Supabase Project URL 및 Anon Key가 입력되지 않았습니다. 아래 입력창에 진짜 Supabase 정보를 입력해 주세요!");
       return;
     }
 
@@ -191,7 +193,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
     if (typeof window !== "undefined") {
       localStorage.setItem("custom_supabase_url", customUrl.trim());
       localStorage.setItem("custom_supabase_key", customKey.trim());
-      alert("Supabase API 연동 정보가 정상 저장되었습니다!");
+      alert("Supabase 연동 정보가 성공적으로 설정되었습니다!");
       setShowConfig(false);
       setErrorMessage(null);
       fetchLeaderboard(customUrl.trim(), customKey.trim());
@@ -223,7 +225,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
             className="flex items-center gap-1.5 bg-[#5C3A21] text-white px-3.5 py-1.5 rounded-full font-bold text-xs hover:scale-105 transition-transform"
           >
             <Settings size={14} />
-            <span>⚙️ Supabase API 연동 설정</span>
+            <span>⚙️ API 연동 설정</span>
           </button>
           <div className="flex items-center gap-2 bg-pastel-pink border border-[#5C3A21]/30 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
             <Database size={18} />
@@ -232,37 +234,43 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
         </div>
       </div>
 
-      {/* Supabase API Quick Config Settings (Collapsible) */}
+      {/* Supabase API Config Box */}
       {showConfig && (
         <div className="w-full bg-amber-50 border-3 border-[#5C3A21] p-5 rounded-2xl flex flex-col gap-3 shadow-md">
           <h4 className="font-bold text-[#5C3A21] text-base flex items-center gap-2">
             <Settings size={18} />
-            <span>🔑 Supabase Project URL 및 Anon Key 입력</span>
+            <span>🔑 내 Supabase API 주소 & Key 1초 입력</span>
           </h4>
           <p className="text-xs text-gray-700 font-medium leading-relaxed">
-            Vercel 환경변수에 Supabase 정보가 등록되지 않아 임시 주소(<code className="bg-amber-100 px-1 font-mono text-rose-600">placeholder-url</code>)가 사용 중이었습니다.<br />
-            Supabase 대시보드 (<strong>Project Settings ➡️ API</strong>)에서 <strong>Project URL</strong>과 <strong>anon public key</strong>를 아래에 붙여넣어 주세요!
+            Supabase 대시보드 (<strong>https://supabase.com/dashboard</strong> ➡️ 내 프로젝트 선택 ➡️ <strong>Project Settings ➡️ API</strong>)에서 
+            <strong>Project URL</strong>과 <strong>anon public key</strong>를 복사해 아래에 넣어주세요!
           </p>
           <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              placeholder="예: https://xxxxxx.supabase.co"
-              value={customUrl}
-              onChange={(e) => setCustomUrl(e.target.value)}
-              className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black"
-            />
-            <input
-              type="text"
-              placeholder="예: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              value={customKey}
-              onChange={(e) => setCustomKey(e.target.value)}
-              className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black"
-            />
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-[#5C3A21]">1. Project URL:</span>
+              <input
+                type="text"
+                placeholder="예: https://abcdefghijklm.supabase.co"
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+                className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black bg-white"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-[#5C3A21]">2. Anon Key:</span>
+              <input
+                type="text"
+                placeholder="예: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                value={customKey}
+                onChange={(e) => setCustomKey(e.target.value)}
+                className="text-xs p-3 rounded-xl border-2 border-[#5C3A21] w-full font-mono text-black bg-white"
+              />
+            </div>
             <button
               onClick={handleSaveConfig}
-              className="bg-[#5C3A21] text-white text-xs font-bold py-2.5 rounded-xl hover:scale-102 transition-transform"
+              className="bg-[#5C3A21] text-white text-xs font-bold py-3 rounded-xl hover:scale-102 transition-transform mt-1"
             >
-              연동 정보 입력하고 연결하기 🚀
+              연동 정보 저장하고 연결하기 🚀
             </button>
           </div>
         </div>
@@ -368,10 +376,10 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
           <span>{saveSuccess ? "Supabase DB 저장 완료! ✅" : isSaving ? "저장 중..." : "Supabase DB에 내 점수 저장하기 💾"}</span>
         </button>
 
-        {/* Detailed Error Alert Banner */}
+        {/* Error Alert Banner */}
         {errorMessage && (
-          <div className="w-full bg-rose-50 border-2 border-rose-400 p-3.5 rounded-xl text-rose-700 text-xs font-bold flex items-start gap-2">
-            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <div className="w-full bg-rose-50 border-2 border-rose-400 p-4 rounded-xl text-rose-700 text-xs font-bold flex items-start gap-2">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
             <div className="flex flex-col gap-1">
               <span>{errorMessage}</span>
             </div>
