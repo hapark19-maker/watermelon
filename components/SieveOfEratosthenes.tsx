@@ -24,7 +24,6 @@ export default function SieveOfEratosthenes() {
   const [mode, setMode] = useState<"interactive" | "simulation">("interactive");
 
   // --- INTERACTIVE CLICK MODE STATE ---
-  // Status of numbers 1..100: 'unclicked' | 'prime' | 'composite' | 'multiple-eliminated'
   const [clickedStatus, setClickedStatus] = useState<Record<number, "unclicked" | "prime" | "composite" | "eliminated">>({});
   const [lastFeedback, setLastFeedback] = useState<string>("숫자 카드를 직접 눌러서 소수인지 확인해보세요!");
   const [foundPrimes, setFoundPrimes] = useState<number[]>([]);
@@ -55,7 +54,7 @@ export default function SieveOfEratosthenes() {
     if (mode !== "interactive") return;
 
     if (clickedStatus[num] && clickedStatus[num] !== "unclicked") {
-      return; // Already processed
+      return;
     }
 
     if (num === 1) {
@@ -65,10 +64,8 @@ export default function SieveOfEratosthenes() {
     }
 
     if (isPrime(num)) {
-      // It is a prime number!
       const newStatus = { ...clickedStatus, [num]: "prime" as const };
 
-      // Automatically eliminate its multiples up to 100
       const eliminatedMultiples: number[] = [];
       for (let m = num * 2; m <= 100; m += num) {
         if (!newStatus[m] || newStatus[m] === "unclicked") {
@@ -88,7 +85,6 @@ export default function SieveOfEratosthenes() {
         setLastFeedback(`딩동댕! 🌟 ${num}은(는) 소수예요!`);
       }
     } else {
-      // It is a composite number!
       const div = getSmallestDivisor(num);
       setClickedStatus((prev) => ({ ...prev, [num]: "composite" }));
       setLastFeedback(`아쉬워요! ${num}은(는) ${div}×${num / div}=${num} 이므로 소수가 아니에요! ❌`);
@@ -101,7 +97,6 @@ export default function SieveOfEratosthenes() {
     setLastFeedback("숫자 카드를 직접 눌러서 소수인지 확인해보세요!");
   };
 
-  // --- Simulation Helper Functions ---
   const handleResetSim = () => {
     setIsPlaying(false);
     setSimStep(0);
@@ -172,23 +167,23 @@ export default function SieveOfEratosthenes() {
   };
 
   return (
-    <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col items-center gap-6 border-none">
+    <div className="w-full max-w-4xl bg-white p-6 sm:p-8 rounded-3xl border-4 border-[#5C3A21] shadow-xl flex flex-col items-center gap-6">
       {/* Title */}
       <div className="text-center flex flex-col items-center gap-2">
-        <div className="flex items-center gap-2 bg-pastel-pink/30 px-4 py-1.5 rounded-full text-pastel-pink font-bold text-sm sm:text-base">
+        <div className="flex items-center gap-2 bg-pastel-pink/30 border border-[#5C3A21]/20 px-4 py-1.5 rounded-full text-[#5C3A21] font-bold text-sm sm:text-base">
           <Sparkles size={18} />
           <span>에라토스테네스의 체 (1~100)</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+        <h2 className="text-2xl sm:text-3xl font-bold text-black">
           소수(Prime Numbers) 탐험대 🔍
         </h2>
-        <p className="text-gray-600 text-sm sm:text-base max-w-lg">
+        <p className="text-gray-600 text-sm sm:text-base max-w-lg font-medium">
           직접 카드를 눌러보며 소수를 발견해 보세요!
         </p>
       </div>
 
       {/* Mode Switch Tabs */}
-      <div className="flex bg-gray-100 p-1.5 rounded-full w-full max-w-md justify-between shadow-inner">
+      <div className="flex bg-gray-100 border-2 border-[#5C3A21]/30 p-1.5 rounded-full w-full max-w-md justify-between shadow-inner">
         <button
           onClick={() => {
             setMode("interactive");
@@ -196,7 +191,7 @@ export default function SieveOfEratosthenes() {
           }}
           className={`flex-1 py-2 px-4 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
             mode === "interactive"
-              ? "bg-pastel-pink text-white shadow-md scale-102"
+              ? "bg-[#5C3A21] text-white shadow-md scale-102"
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -211,7 +206,7 @@ export default function SieveOfEratosthenes() {
           }}
           className={`flex-1 py-2 px-4 rounded-full font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
             mode === "simulation"
-              ? "bg-pastel-mint text-white shadow-md scale-102"
+              ? "bg-[#5C3A21] text-white shadow-md scale-102"
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -225,21 +220,21 @@ export default function SieveOfEratosthenes() {
         <div className="w-full flex flex-col items-center gap-4">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              <span className="text-sm sm:text-base font-bold text-gray-700">
-                발견한 소수: <span className="text-pastel-pink text-lg">{foundPrimes.length}</span> / 25개
+              <span className="text-sm sm:text-base font-bold text-[#5C3A21]">
+                발견한 소수: <span className="text-pastel-pink text-lg font-extrabold">{foundPrimes.length}</span> / 25개
               </span>
             </div>
 
             <button
               onClick={handleResetInteractive}
-              className="flex items-center gap-1.5 bg-pastel-blue text-white px-4 py-2 rounded-full font-bold text-xs sm:text-sm shadow-md hover:scale-105 transition-transform duration-200"
+              className="flex items-center gap-1.5 bg-[#5C3A21] text-white px-4 py-2 rounded-full font-bold text-xs sm:text-sm shadow-md hover:scale-105 transition-transform duration-200"
             >
               <RefreshCw size={16} />
               <span>다시 고르기</span>
             </button>
           </div>
 
-          <div className="w-full bg-pastel-lemon/50 p-4 rounded-2xl text-center border-none shadow-sm min-h-[60px] flex items-center justify-center">
+          <div className="w-full bg-pastel-lemon/60 border-2 border-[#5C3A21]/20 p-4 rounded-2xl text-center shadow-sm min-h-[60px] flex items-center justify-center">
             <p className="text-gray-800 font-bold text-sm sm:text-base">
               {lastFeedback}
             </p>
@@ -250,7 +245,7 @@ export default function SieveOfEratosthenes() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={handleTogglePlaySim}
-              className="flex items-center gap-2 bg-pastel-pink text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200"
+              className="flex items-center gap-2 bg-pastel-pink border-2 border-[#5C3A21] text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200"
             >
               {isPlaying ? <Pause size={18} /> : <Play size={18} />}
               <span>{isPlaying ? "일시정지" : simStep === 0 ? "자동 재생" : simStep === MAX_SIM_STEP ? "다시 보기" : "이어서 재생"}</span>
@@ -259,7 +254,7 @@ export default function SieveOfEratosthenes() {
             <button
               onClick={handleNextSim}
               disabled={simStep >= MAX_SIM_STEP || isPlaying}
-              className="flex items-center gap-1.5 bg-pastel-mint text-white px-5 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 bg-pastel-mint border-2 border-[#5C3A21] text-[#5C3A21] px-5 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
             >
               <span>다음 단계</span>
               <ChevronRight size={18} />
@@ -267,14 +262,14 @@ export default function SieveOfEratosthenes() {
 
             <button
               onClick={handleResetSim}
-              className="flex items-center gap-1.5 bg-pastel-blue text-white px-4 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200"
+              className="flex items-center gap-1.5 bg-[#5C3A21] text-white px-4 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200"
             >
               <RotateCcw size={18} />
               <span>처음부터</span>
             </button>
           </div>
 
-          <div className="w-full bg-pastel-lemon/50 p-4 rounded-2xl text-center border-none shadow-sm">
+          <div className="w-full bg-pastel-lemon/60 border-2 border-[#5C3A21]/20 p-4 rounded-2xl text-center shadow-sm">
             <p className="text-gray-800 font-bold text-sm sm:text-base">
               {getSimStepDescription()}
             </p>
@@ -283,40 +278,39 @@ export default function SieveOfEratosthenes() {
       )}
 
       {/* 100 Grid */}
-      <div className="grid grid-cols-10 gap-1.5 sm:gap-2.5 w-full p-2.5 bg-gray-50/60 rounded-2xl">
+      <div className="grid grid-cols-10 gap-1.5 sm:gap-2.5 w-full p-2.5 bg-gray-50 border-2 border-[#5C3A21]/20 rounded-2xl">
         {Array.from({ length: 100 }, (_, i) => i + 1).map((num) => {
           if (mode === "interactive") {
             const status = clickedStatus[num] || "unclicked";
 
-            let bgClass = "bg-white text-gray-700 shadow-xs hover:scale-105 hover:bg-pastel-pink/20 cursor-pointer";
+            let bgClass = "bg-white text-gray-800 border border-gray-200 shadow-xs hover:scale-105 hover:bg-pastel-pink/20 cursor-pointer";
             if (status === "prime") {
-              bgClass = "bg-pastel-pink text-white font-bold scale-105 shadow-md animate-bounce";
+              bgClass = "bg-pastel-pink border-2 border-[#5C3A21] text-white font-bold scale-105 shadow-md animate-bounce";
             } else if (status === "composite") {
-              bgClass = "bg-gray-300 text-gray-500 opacity-60 scale-95 line-through cursor-default";
+              bgClass = "bg-gray-300 border border-gray-400 text-gray-500 opacity-60 scale-95 line-through cursor-default";
             } else if (status === "eliminated") {
-              bgClass = "bg-gray-200/70 text-gray-400 opacity-40 scale-90 line-through cursor-default";
+              bgClass = "bg-gray-200/70 border border-gray-300 text-gray-400 opacity-40 scale-90 line-through cursor-default";
             }
 
             return (
               <button
                 key={num}
                 onClick={() => handleCardClick(num)}
-                className={`aspect-square flex items-center justify-center rounded-xl sm:rounded-2xl text-xs sm:text-base font-semibold transition-all duration-200 select-none border-none ${bgClass}`}
+                className={`aspect-square flex items-center justify-center rounded-xl sm:rounded-2xl text-xs sm:text-base font-semibold transition-all duration-200 select-none ${bgClass}`}
               >
                 {num}
               </button>
             );
           } else {
-            // Simulation Mode
             const status = getSimNumberStatus(num);
 
-            let bgClass = "bg-white text-gray-700 shadow-xs";
+            let bgClass = "bg-white text-gray-800 border border-gray-200 shadow-xs";
             if (status === "eliminated") {
-              bgClass = "bg-gray-200/60 text-gray-400 opacity-40 scale-95 line-through";
+              bgClass = "bg-gray-200/60 border border-gray-300 text-gray-400 opacity-40 scale-95 line-through";
             } else if (status === "active-prime") {
-              bgClass = "bg-pastel-pink text-white font-bold scale-110 shadow-lg ring-4 ring-pastel-pink/40 animate-pulse";
+              bgClass = "bg-pastel-pink border-2 border-[#5C3A21] text-white font-bold scale-110 shadow-lg ring-4 ring-pastel-pink/40 animate-pulse";
             } else if (status === "prime") {
-              bgClass = "bg-pastel-mint text-white font-bold scale-105 shadow-md";
+              bgClass = "bg-pastel-mint border-2 border-[#5C3A21] text-[#5C3A21] font-bold scale-105 shadow-md";
             }
 
             return (
@@ -331,11 +325,11 @@ export default function SieveOfEratosthenes() {
         })}
       </div>
 
-      {/* Found Primes List in Interactive Mode */}
+      {/* Found Primes List */}
       {mode === "interactive" && foundPrimes.length > 0 && (
-        <div className="w-full flex flex-col gap-3 bg-pastel-pink/10 p-5 rounded-2xl">
+        <div className="w-full flex flex-col gap-3 bg-pastel-pink/15 border-2 border-[#5C3A21]/30 p-5 rounded-2xl">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-pastel-pink font-bold">
+            <div className="flex items-center gap-2 text-[#5C3A21] font-bold">
               <Award size={20} />
               <span>내가 수집한 소수 리스트 ({foundPrimes.length}개)</span>
             </div>
@@ -344,7 +338,7 @@ export default function SieveOfEratosthenes() {
             {foundPrimes.map((prime) => (
               <span
                 key={prime}
-                className="bg-pastel-pink text-white font-bold text-xs sm:text-sm px-3 py-1 rounded-full shadow-xs hover:scale-110 transition-transform duration-200"
+                className="bg-pastel-pink border border-[#5C3A21]/30 text-white font-bold text-xs sm:text-sm px-3 py-1 rounded-full shadow-xs hover:scale-110 transition-transform duration-200"
               >
                 {prime}
               </span>
