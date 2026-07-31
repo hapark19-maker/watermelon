@@ -10,9 +10,9 @@ const config: Config = {
     extend: {
       colors: {
         pastel: {
-          pink: '#FF8DA1',
-          mint: '#75CE9F',
-          blue: '#7BBCE0',
+          pink: '#FFAFBE',
+          mint: '#9BD7B0',
+          blue: '#94C1D7',
           lemon: '#FDFD96'
         }
       }
