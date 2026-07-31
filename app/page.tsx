@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database, Zap } from "lucide-react";
+import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database, Zap, Bot } from "lucide-react";
 import SieveOfEratosthenes from "@/components/SieveOfEratosthenes";
 import MathQuiz from "@/components/MathQuiz";
 import ShapeExplorer from "@/components/ShapeExplorer";
 import WaterGraphActivity from "@/components/WaterGraphActivity";
 import IntegerQuizActivity from "@/components/IntegerQuizActivity";
 import JumpGameActivity from "@/components/JumpGameActivity";
+import MathChatbotActivity from "@/components/MathChatbotActivity";
 
 export default function Home() {
-  const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | "jump-game" | null>(null);
+  const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | "jump-game" | "chatbot" | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 gap-8">
@@ -45,7 +46,7 @@ export default function Home() {
             <section className="w-full bg-pastel-mint p-8 sm:p-10 rounded-3xl shadow-lg text-center flex flex-col items-center gap-3 border-none">
               <div className="bg-white/30 text-white font-bold px-4 py-1 rounded-full text-sm inline-flex items-center gap-1.5 shadow-xs">
                 <Sparkles size={16} />
-                <span>신나는 플래시 장애물 점프 게임 출시</span>
+                <span>OpenAI 기반 AI 수학 선생님 챗봇 연동 완료</span>
               </div>
               <h2 className="text-3xl sm:text-4xl text-white font-bold tracking-wide">
                 안녕! 현아의 수학교실에 온 걸 환영해! 👋
@@ -214,6 +215,31 @@ export default function Home() {
                   <ArrowRight size={18} />
                 </div>
               </div>
+
+              {/* Card 7: AI Math Tutor Chatbot (OpenAI API Integrated) */}
+              <div
+                onClick={() => setActiveActivity("chatbot")}
+                className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+              >
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="bg-pastel-pink/40 text-[#5C3A21] border border-[#5C3A21]/30 px-3.5 py-1 rounded-full text-xs font-bold">
+                      활동 7 (OpenAI 챗봇)
+                    </span>
+                    <Bot size={24} className="text-pastel-pink" />
+                  </div>
+                  <h4 className="text-2xl font-bold tracking-wide text-black">
+                    AI 수학 선생님 🤖
+                  </h4>
+                  <p className="text-gray-700 text-sm font-medium leading-relaxed">
+                    궁금한 수학 질문을 자유롭게 물어보면 AI 수학 선생님이 친절하게 다 답해줘요!
+                  </p>
+                </div>
+                <div className="flex items-center justify-between font-bold bg-pastel-pink/20 text-[#5C3A21] p-3.5 rounded-2xl border border-[#5C3A21]/30 group-hover:bg-[#5C3A21] group-hover:text-white transition-colors duration-200">
+                  <span>AI 선생님께 질문하기</span>
+                  <ArrowRight size={18} />
+                </div>
+              </div>
             </div>
           </>
         ) : (
@@ -234,6 +260,7 @@ export default function Home() {
             {activeActivity === "water-graph" && <WaterGraphActivity onBack={() => setActiveActivity(null)} />}
             {activeActivity === "integer-quiz" && <IntegerQuizActivity onBack={() => setActiveActivity(null)} />}
             {activeActivity === "jump-game" && <JumpGameActivity onBack={() => setActiveActivity(null)} />}
+            {activeActivity === "chatbot" && <MathChatbotActivity onBack={() => setActiveActivity(null)} />}
           </div>
         )}
       </main>
