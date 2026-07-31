@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Award, Database, RefreshCw, Trophy } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Database, RefreshCw, Trophy, Settings, AlertCircle } from "lucide-react";
+import { getSupabaseClient } from "@/lib/supabase";
 
 interface ScoreRecord {
   id?: string;
@@ -20,7 +20,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   const [num2, setNum2] = useState(3);
   const [op, setOp] = useState<"+" | "-" | "*" | "/">("+");
   const [userAnswer, setUserAnswer] = useState("");
-  
+
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
@@ -28,21 +28,34 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   const [leaderboard, setLeaderboard] = useState<ScoreRecord[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Generate integer arithmetic problem with positive/negative numbers
+  // Settings for custom Supabase URL / Anon Key
+  const [showConfig, setShowConfig] = useState(false);
+  const [customUrl, setCustomUrl] = useState("");
+  const [customKey, setCustomKey] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCustomUrl(localStorage.getItem("custom_supabase_url") || "");
+      setCustomKey(localStorage.getItem("custom_supabase_key") || "");
+    }
+    generateNewQuestion();
+    fetchLeaderboard();
+  }, []);
+
   const generateNewQuestion = () => {
     const ops: ("+" | "-" | "*" | "/")[] = ["+", "-", "*", "/"];
     const chosenOp = ops[Math.floor(Math.random() * ops.length)];
     setOp(chosenOp);
 
-    let a = Math.floor(Math.random() * 19) - 9; // -9 to 9
+    let a = Math.floor(Math.random() * 19) - 9;
     if (a === 0) a = -3;
     let b = Math.floor(Math.random() * 19) - 9;
     if (b === 0) b = 2;
 
     if (chosenOp === "/") {
-      // Ensure divisible integer result
-      const quotient = Math.floor(Math.random() * 9) - 4; // -4 to 4, not 0
+      const quotient = Math.floor(Math.random() * 9) - 4;
       const validQuotient = quotient === 0 ? 2 : quotient;
       a = validQuotient * b;
     }
@@ -53,14 +66,10 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
     setFeedback(null);
   };
 
-  useEffect(() => {
-    generateNewQuestion();
-    fetchLeaderboard();
-  }, []);
-
   const fetchLeaderboard = async () => {
     try {
-      const { data, error } = await supabase
+      const client = getSupabaseClient(customUrl, customKey);
+      const { data, error } = await client
         .from("student_scores")
         .select("*")
         .order("score", { ascending: false })
@@ -68,9 +77,12 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
 
       if (!error && data) {
         setLeaderboard(data);
+        setErrorMessage(null);
+      } else if (error) {
+        console.log("Supabase fetch notice:", error);
       }
-    } catch (err) {
-      console.log("Supabase fetch notice:", err);
+    } catch (err: any) {
+      console.log("Supabase error:", err);
     }
   };
 
@@ -97,7 +109,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
     const expected = calculateCorrectResult();
 
     if (parsedAns === expected) {
-      setScore((prev) => prev + 10); // 10 points for correct answer!
+      setScore((prev) => prev + 10);
       setCorrectCount((prev) => prev + 1);
       setFeedback("correct");
       setTimeout(() => {
@@ -110,17 +122,20 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
 
   const handleSaveScoreToSupabase = async () => {
     if (!studentName.trim()) {
-      alert("학생 이름을 입력해주세요!");
+      alert("학생 이름을 먼저 입력해주세요!");
       return;
     }
     if (score === 0) {
-      alert("최소 1문제 이상 맞혀서 점수를 취득해야 저장할 수 있어요!");
+      alert("최소 1문제 이상 맞혀서 점수를 획득해야 저장할 수 있어요!");
       return;
     }
 
     setIsSaving(true);
+    setErrorMessage(null);
+
     try {
-      const { error } = await supabase.from("student_scores").insert([
+      const client = getSupabaseClient(customUrl, customKey);
+      const { error } = await client.from("student_scores").insert([
         {
           student_name: studentName.trim(),
           score: score,
@@ -129,15 +144,27 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
       ]);
 
       if (error) {
-        alert("Supabase 저장 실패: DB 테이블이 생성되었는지 확인해주세요.");
+        console.error("Supabase insert error:", error);
+        setErrorMessage(`저장 실패 [${error.code || "오류"}]: ${error.message}`);
       } else {
         setSaveSuccess(true);
+        setErrorMessage(null);
         fetchLeaderboard();
       }
-    } catch (err) {
-      alert("Supabase 연동을 확인해주세요.");
+    } catch (err: any) {
+      setErrorMessage(`저장 에러: ${err?.message || "Supabase 주소 및 Key를 확인해주세요."}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveConfig = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("custom_supabase_url", customUrl.trim());
+      localStorage.setItem("custom_supabase_key", customKey.trim());
+      alert("Supabase API 정보가 저장되었습니다!");
+      setShowConfig(false);
+      fetchLeaderboard();
     }
   };
 
@@ -160,11 +187,55 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
           <span>카드뉴스 메인으로</span>
         </button>
 
-        <div className="flex items-center gap-2 bg-pastel-pink border border-[#5C3A21]/30 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
-          <Database size={18} />
-          <span>Supabase DB 연동 완료</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowConfig(!showConfig)}
+            className="flex items-center gap-1.5 bg-gray-100 border border-[#5C3A21]/30 text-[#5C3A21] px-3 py-1.5 rounded-full font-bold text-xs hover:bg-gray-200"
+          >
+            <Settings size={14} />
+            <span>API 설정</span>
+          </button>
+          <div className="flex items-center gap-2 bg-pastel-pink border border-[#5C3A21]/30 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
+            <Database size={18} />
+            <span>Supabase DB 연동</span>
+          </div>
         </div>
       </div>
+
+      {/* Supabase API Quick Config Settings (Collapsible) */}
+      {showConfig && (
+        <div className="w-full bg-amber-50 border-2 border-[#5C3A21] p-5 rounded-2xl flex flex-col gap-3">
+          <h4 className="font-bold text-[#5C3A21] text-sm flex items-center gap-2">
+            <Settings size={16} />
+            <span>Supabase 프로젝트 API 연결 직접 설정</span>
+          </h4>
+          <p className="text-xs text-gray-700">
+            Vercel 환경변수가 설정되지 않은 경우 아래에 Supabase URL과 anon key를 직접 입력할 수 있습니다.
+          </p>
+          <div className="flex flex-col gap-2">
+            <input
+              type="text"
+              placeholder="Supabase Project URL (https://xxxx.supabase.co)"
+              value={customUrl}
+              onChange={(e) => setCustomUrl(e.target.value)}
+              className="text-xs p-2.5 rounded-xl border border-gray-300 w-full"
+            />
+            <input
+              type="text"
+              placeholder="Supabase Anon Key (eyJhbG...)"
+              value={customKey}
+              onChange={(e) => setCustomKey(e.target.value)}
+              className="text-xs p-2.5 rounded-xl border border-gray-300 w-full"
+            />
+            <button
+              onClick={handleSaveConfig}
+              className="bg-[#5C3A21] text-white text-xs font-bold py-2 rounded-xl hover:scale-102 transition-transform"
+            >
+              설정 저장하기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Activity Title */}
       <div className="text-center flex flex-col items-center gap-2">
@@ -192,7 +263,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               value={studentName}
               onChange={(e) => setStudentName(e.target.value)}
               placeholder="예: 홍길동"
-              className="flex-1 text-center font-bold p-3 rounded-full border-2 border-[#5C3A21] focus:outline-none focus:ring-2 focus:ring-pastel-pink"
+              className="flex-1 text-center font-bold p-3 rounded-full border-2 border-[#5C3A21] focus:outline-none focus:ring-2 focus:ring-pastel-pink text-black"
             />
             <button
               onClick={() => {
@@ -266,6 +337,19 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
           <span>{saveSuccess ? "Supabase DB 저장 완료! ✅" : isSaving ? "저장 중..." : "Supabase DB에 내 점수 저장하기 💾"}</span>
         </button>
 
+        {/* Detailed Error Alert Banner */}
+        {errorMessage && (
+          <div className="w-full bg-rose-50 border-2 border-rose-400 p-3.5 rounded-xl text-rose-700 text-xs font-bold flex items-start gap-2">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1">
+              <span>{errorMessage}</span>
+              <span className="text-[11px] font-normal text-rose-600">
+                💡 팁: SQL Editor에서 RLS를 비활성화하거나 오른쪽 상단 'API 설정' 버튼을 눌러 Supabase URL과 Key를 확인해보세요!
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Real-time Leaderboard */}
         <div className="w-full flex flex-col gap-2 mt-2">
           <div className="flex items-center justify-between text-xs font-bold text-[#5C3A21]">
@@ -293,7 +377,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
               ))
             ) : (
               <span className="text-xs text-gray-500 text-center py-2">
-                아직 저장된 점수가 없거나 DB 연결 준비 중입니다. SQL Query를 실행해 주세요.
+                아직 저장된 점수가 없거나 DB 연결 준비 중입니다.
               </span>
             )}
           </div>

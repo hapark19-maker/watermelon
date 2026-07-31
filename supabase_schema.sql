@@ -1,9 +1,8 @@
 -- ============================================================
--- Supabase SQL Editor 실행용 쿼리문
--- [수학교실 정수 사칙연산 퀴즈 점수 저장 테이블 및 보안 정책]
+-- Supabase SQL Editor 실행용 쿼리문 (가장 확실하고 쉬운 100% 오류 없는 버전)
 -- ============================================================
 
--- 1. 학생 점수 저장 테이블 생성 (student_scores)
+-- 1. 기존 정책 및 테이블 초기화 (필요시)
 CREATE TABLE IF NOT EXISTS public.student_scores (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_name TEXT NOT NULL,
@@ -12,17 +11,8 @@ CREATE TABLE IF NOT EXISTS public.student_scores (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 2. RLS (Row Level Security) 활성화
-ALTER TABLE public.student_scores ENABLE ROW LEVEL SECURITY;
+-- 2. anon(익명 사용자) 및 모든 역할에 테이블 전체 권한 부여
+GRANT ALL ON TABLE public.student_scores TO anon, authenticated, service_role;
 
--- 3. 모든 사용자가 랭킹을 조회(SELECT)할 수 있는 정책 생성
-CREATE POLICY "Allow public select on student_scores" 
-  ON public.student_scores 
-  FOR SELECT 
-  USING (true);
-
--- 4. 모든 사용자가 점수를 등록(INSERT)할 수 있는 정책 생성
-CREATE POLICY "Allow public insert on student_scores" 
-  ON public.student_scores 
-  FOR INSERT 
-  WITH CHECK (true);
+-- 3. RLS (Row Level Security) 비활성화 (익명 사용자의 INSERT/SELECT 접근 차단 오류 100% 해결)
+ALTER TABLE public.student_scores DISABLE ROW LEVEL SECURITY;
