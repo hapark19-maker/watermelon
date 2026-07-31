@@ -36,6 +36,15 @@ export default function Home() {
     setCurrentUser(null);
   };
 
+  const handleSelectActivity = (activityKey: "sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | "jump-game" | "chatbot") => {
+    if (activityKey === "chatbot" && !currentUser) {
+      alert("AI 수학 선생님 챗봇은 로그인 후 이용하실 수 있습니다! 로그인창으로 이동합니다.");
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setActiveActivity(activityKey);
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 gap-8">
       {/* Header */}
@@ -85,7 +94,7 @@ export default function Home() {
             <section className="w-full bg-pastel-mint p-8 sm:p-10 rounded-3xl shadow-lg text-center flex flex-col items-center gap-3 border-none">
               <div className="bg-white/30 text-white font-bold px-4 py-1 rounded-full text-sm inline-flex items-center gap-1.5 shadow-xs">
                 <Sparkles size={16} />
-                <span>회원가입 & 로그인 지원</span>
+                <span>구글 로그인 & 안전한 랭킹 기록</span>
               </div>
               <h2 className="text-3xl sm:text-4xl text-white font-bold tracking-wide">
                 안녕! 현아의 수학교실에 온 걸 환영해! 👋
@@ -107,7 +116,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
               {/* Card 1: Sieve of Eratosthenes */}
               <div
-                onClick={() => setActiveActivity("sieve")}
+                onClick={() => handleSelectActivity("sieve")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
               >
                 <div className="flex flex-col gap-3">
@@ -132,7 +141,7 @@ export default function Home() {
 
               {/* Card 2: Math Quiz */}
               <div
-                onClick={() => setActiveActivity("quiz")}
+                onClick={() => handleSelectActivity("quiz")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
               >
                 <div className="flex flex-col gap-3">
@@ -157,7 +166,7 @@ export default function Home() {
 
               {/* Card 3: Shape Explorer */}
               <div
-                onClick={() => setActiveActivity("shape")}
+                onClick={() => handleSelectActivity("shape")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
               >
                 <div className="flex flex-col gap-3">
@@ -182,7 +191,7 @@ export default function Home() {
 
               {/* Card 4: Water Graph Activity */}
               <div
-                onClick={() => setActiveActivity("water-graph")}
+                onClick={() => handleSelectActivity("water-graph")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
               >
                 <div className="flex flex-col gap-3">
@@ -207,7 +216,7 @@ export default function Home() {
 
               {/* Card 5: Integer Arithmetic Quiz */}
               <div
-                onClick={() => setActiveActivity("integer-quiz")}
+                onClick={() => handleSelectActivity("integer-quiz")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
               >
                 <div className="flex flex-col gap-3">
@@ -232,7 +241,7 @@ export default function Home() {
 
               {/* Card 6: Flash Jump Game */}
               <div
-                onClick={() => setActiveActivity("jump-game")}
+                onClick={() => handleSelectActivity("jump-game")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
               >
                 <div className="flex flex-col gap-3">
@@ -255,15 +264,15 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 7: AI Math Tutor Chatbot */}
+              {/* Card 7: AI Math Tutor Chatbot (Requires Login) */}
               <div
-                onClick={() => setActiveActivity("chatbot")}
-                className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+                onClick={() => handleSelectActivity("chatbot")}
+                className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group relative"
               >
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <span className="bg-pastel-pink/40 text-[#5C3A21] border border-[#5C3A21]/30 px-3.5 py-1 rounded-full text-xs font-bold">
-                      활동 7 (OpenAI 챗봇)
+                      활동 7 (로그인 필요 🔒)
                     </span>
                     <Bot size={24} className="text-pastel-pink" />
                   </div>
@@ -275,7 +284,7 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex items-center justify-between font-bold bg-pastel-pink/20 text-[#5C3A21] p-3.5 rounded-2xl border border-[#5C3A21]/30 group-hover:bg-[#5C3A21] group-hover:text-white transition-colors duration-200">
-                  <span>AI 선생님께 질문하기</span>
+                  <span>{currentUser ? "AI 선생님께 질문하기" : "로그인 후 이용 가능 🔒"}</span>
                   <ArrowRight size={18} />
                 </div>
               </div>
@@ -297,8 +306,20 @@ export default function Home() {
             {activeActivity === "quiz" && <MathQuiz onBack={() => setActiveActivity(null)} />}
             {activeActivity === "shape" && <ShapeExplorer onBack={() => setActiveActivity(null)} />}
             {activeActivity === "water-graph" && <WaterGraphActivity onBack={() => setActiveActivity(null)} />}
-            {activeActivity === "integer-quiz" && <IntegerQuizActivity onBack={() => setActiveActivity(null)} />}
-            {activeActivity === "jump-game" && <JumpGameActivity onBack={() => setActiveActivity(null)} />}
+            {activeActivity === "integer-quiz" && (
+              <IntegerQuizActivity
+                onBack={() => setActiveActivity(null)}
+                currentUser={currentUser}
+                onRequireLogin={() => setIsAuthModalOpen(true)}
+              />
+            )}
+            {activeActivity === "jump-game" && (
+              <JumpGameActivity
+                onBack={() => setActiveActivity(null)}
+                currentUser={currentUser}
+                onRequireLogin={() => setIsAuthModalOpen(true)}
+              />
+            )}
             {activeActivity === "chatbot" && <MathChatbotActivity onBack={() => setActiveActivity(null)} />}
           </div>
         )}

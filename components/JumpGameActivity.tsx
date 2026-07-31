@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Sparkles, Play, RotateCcw, Trophy, Database, Award, RefreshCw, Zap } from "lucide-react";
+import { ArrowLeft, Sparkles, Play, RotateCcw, Trophy, Database, Award, RefreshCw, Zap, LogIn } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface JumpScore {
@@ -12,12 +12,18 @@ interface JumpScore {
   created_at?: string;
 }
 
-export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
+interface JumpGameProps {
+  onBack: () => void;
+  currentUser: { email: string; nickname: string } | null;
+  onRequireLogin: () => void;
+}
+
+export default function JumpGameActivity({ onBack, currentUser, onRequireLogin }: JumpGameProps) {
   const [gameState, setGameState] = useState<"IDLE" | "PLAYING" | "GAMEOVER">("IDLE");
   const [score, setScore] = useState(0);
   const [clearedCount, setClearedCount] = useState(0);
   const [currentSpeedMultiplier, setCurrentSpeedMultiplier] = useState(1);
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(currentUser?.nickname || "");
   const [topScores, setTopScores] = useState<JumpScore[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -25,23 +31,11 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const requestRef = useRef<number | null>(null);
 
-  // Game Engine State Refs (to avoid re-render stutter)
-  const gameRef = useRef({
-    runnerY: 190,
-    runnerVy: 0,
-    isJumping: false,
-    groundY: 190,
-    gravity: 0.65,
-    jumpForce: -12.5,
-    speed: 5.5,
-    baseSpeed: 5.5,
-    score: 0,
-    clearedCount: 0,
-    obstacles: [] as { x: number; width: number; height: number; passed: boolean }[],
-    trackOffset: 0,
-    lastObstacleTime: 0,
-    gameTime: 0,
-  });
+  useEffect(() => {
+    if (currentUser?.nickname) {
+      setPlayerName(currentUser.nickname);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     fetchTopScores();
@@ -62,6 +56,23 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
       console.log("Fetch top scores notice:", err);
     }
   };
+
+  const gameRef = useRef({
+    runnerY: 190,
+    runnerVy: 0,
+    isJumping: false,
+    groundY: 190,
+    gravity: 0.65,
+    jumpForce: -12.5,
+    speed: 5.5,
+    baseSpeed: 5.5,
+    score: 0,
+    clearedCount: 0,
+    obstacles: [] as { x: number; width: number; height: number; passed: boolean }[],
+    trackOffset: 0,
+    lastObstacleTime: 0,
+    gameTime: 0,
+  });
 
   const startGame = () => {
     gameRef.current = {
@@ -95,7 +106,6 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
     }
   };
 
-  // Keyboard Spacebar / ArrowUp listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" || e.code === "ArrowUp") {
@@ -111,7 +121,6 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameState]);
 
-  // Main 60FPS Game Loop
   useEffect(() => {
     if (gameState !== "PLAYING") return;
 
@@ -124,7 +133,6 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
       const g = gameRef.current;
       g.gameTime += 1;
 
-      // 1. Update Physics
       g.runnerVy += g.gravity;
       g.runnerY += g.runnerVy;
 
@@ -134,14 +142,11 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
         g.isJumping = false;
       }
 
-      // Speed increases gradually over time
       g.speed = g.baseSpeed + Math.min(g.gameTime / 300, 6.5);
       const speedMult = parseFloat((g.speed / g.baseSpeed).toFixed(1));
 
-      // Track offset for ground animation
       g.trackOffset = (g.trackOffset + g.speed) % 40;
 
-      // 2. Spawn Obstacles (Stone Rocks)
       const now = Date.now();
       const minInterval = Math.max(1200, 2200 - g.speed * 120);
       if (now - g.lastObstacleTime > minInterval + Math.random() * 800) {
@@ -154,12 +159,10 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
         g.lastObstacleTime = now;
       }
 
-      // 3. Move Obstacles & Score Calculation
       for (let i = 0; i < g.obstacles.length; i++) {
         const obs = g.obstacles[i];
         obs.x -= g.speed;
 
-        // Check if cleared
         if (!obs.passed && obs.x + obs.width < 80) {
           obs.passed = true;
           g.clearedCount += 1;
@@ -172,10 +175,8 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
         }
       }
 
-      // Remove offscreen obstacles
       g.obstacles = g.obstacles.filter((obs) => obs.x + obs.width > -50);
 
-      // 4. Collision Detection (Runner hit Stone)
       const runnerBox = {
         x: 80 + 8,
         y: g.runnerY + 5,
@@ -198,18 +199,14 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
           runnerBox.y < obsBox.y + obsBox.height &&
           runnerBox.y + runnerBox.height > obsBox.y
         ) {
-          // Game Over Collision!
           setGameState("GAMEOVER");
           return;
         }
       }
 
-      // 5. Draw Canvas Scene
-      // Sky Background
       ctx.fillStyle = "#E0F2FE";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Clouds
       ctx.fillStyle = "#FFFFFF";
       ctx.beginPath();
       ctx.arc((g.gameTime * 0.5) % 700 - 50, 40, 25, 0, Math.PI * 2);
@@ -223,17 +220,14 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
       ctx.arc((g.gameTime * 0.3 + 300) % 700, 60, 20, 0, Math.PI * 2);
       ctx.fill();
 
-      // Stadium Stands / Background Wall
       ctx.fillStyle = "#94C1D7";
       ctx.fillRect(0, canvas.height - 120, canvas.width, 50);
       ctx.fillStyle = "#FFAFBE";
       ctx.fillRect(0, canvas.height - 120, canvas.width, 8);
 
-      // Running Track (Reddish-brown athletic track)
       ctx.fillStyle = "#C85A32";
       ctx.fillRect(0, canvas.height - 70, canvas.width, 70);
 
-      // White Track Lane Lines
       ctx.strokeStyle = "#FFFFFF";
       ctx.lineWidth = 3;
       ctx.setLineDash([25, 15]);
@@ -247,14 +241,12 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
       ctx.moveTo(0, canvas.height - 20);
       ctx.lineTo(canvas.width, canvas.height - 20);
       ctx.stroke();
-      ctx.setLineDash([]); // Reset dash
+      ctx.setLineDash([]);
 
-      // Draw Obstacles (Stone Rocks 🪨)
       for (const obs of g.obstacles) {
         const obsY = canvas.height - 70 - obs.height;
 
-        // Rock Shape
-        ctx.fillStyle = "#64748B"; // Slate stone gray
+        ctx.fillStyle = "#64748B";
         ctx.beginPath();
         ctx.moveTo(obs.x + obs.width * 0.2, obsY + obs.height);
         ctx.lineTo(obs.x, obsY + obs.height * 0.6);
@@ -269,50 +261,42 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
-        // Rock highlight/texture
         ctx.fillStyle = "#94A3B8";
         ctx.beginPath();
         ctx.arc(obs.x + obs.width * 0.4, obsY + obs.height * 0.3, 4, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Draw Runner Character 🏃‍♂️
       const charX = 80;
       const charY = g.runnerY;
 
-      // Character Shadow
       ctx.fillStyle = "rgba(0,0,0,0.2)";
       ctx.beginPath();
       ctx.ellipse(charX + 22, canvas.height - 68, 18, 6, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Character Body (Cute Pastel Pink Runner)
       ctx.fillStyle = "#FF8DA1";
       ctx.beginPath();
-      ctx.arc(charX + 22, charY + 14, 14, 0, Math.PI * 2); // Head
+      ctx.arc(charX + 22, charY + 14, 14, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = "#5C3A21";
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // Eyes
       ctx.fillStyle = "#5C3A21";
       ctx.beginPath();
       ctx.arc(charX + 26, charY + 12, 2.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Torso / Outfit
-      ctx.fillStyle = "#75CE9F"; // Mint shirt
+      ctx.fillStyle = "#75CE9F";
       ctx.fillRect(charX + 12, charY + 28, 20, 20);
       ctx.strokeRect(charX + 12, charY + 28, 20, 20);
 
-      // Running Legs
       const legPhase = Math.sin(g.gameTime * 0.4);
       ctx.strokeStyle = "#5C3A21";
       ctx.lineWidth = 4;
 
       if (g.isJumping) {
-        // Jumping legs position
         ctx.beginPath();
         ctx.moveTo(charX + 16, charY + 48);
         ctx.lineTo(charX + 8, charY + 58);
@@ -320,7 +304,6 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
         ctx.lineTo(charX + 36, charY + 56);
         ctx.stroke();
       } else {
-        // Running legs animation
         ctx.beginPath();
         ctx.moveTo(charX + 16, charY + 48);
         ctx.lineTo(charX + 16 + legPhase * 10, charY + 62);
@@ -338,9 +321,15 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
     };
   }, [gameState]);
 
-  // Save Score to Supabase DB
   const handleSaveScore = async () => {
-    if (!playerName.trim()) {
+    if (!currentUser) {
+      alert("로그인 후 점수를 저장할 수 있습니다. 로그인 창으로 이동합니다!");
+      onRequireLogin();
+      return;
+    }
+
+    const nameToSave = currentUser.nickname || playerName.trim();
+    if (!nameToSave) {
       alert("이름/닉네임을 입력해주세요!");
       return;
     }
@@ -349,7 +338,7 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
     try {
       const { error } = await supabase.from("jump_game_scores").insert([
         {
-          player_name: playerName.trim(),
+          player_name: nameToSave,
           score: score,
           cleared_obstacles: clearedCount,
         },
@@ -453,23 +442,29 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
 
             {/* Score Save Input inside Overlay */}
             <div className="w-full max-w-sm bg-white text-gray-800 p-4 rounded-2xl flex flex-col items-center gap-3 shadow-md border-2 border-[#5C3A21]">
-              <span className="font-bold text-[#5C3A21] text-sm">내 이름을 입력하고 랭킹에 등록하세요:</span>
-              <div className="flex gap-2 w-full">
-                <input
-                  type="text"
-                  placeholder="이름/닉네임"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className="flex-1 text-center font-bold p-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-pastel-pink"
-                />
-                <button
-                  onClick={handleSaveScore}
-                  disabled={isSaving || saveSuccess}
-                  className="bg-[#5C3A21] text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:scale-105 transition-transform duration-200 disabled:opacity-50"
-                >
-                  {saveSuccess ? "저장 완료! ✅" : "점수 저장 💾"}
-                </button>
-              </div>
+              {currentUser ? (
+                <div className="flex items-center justify-between w-full font-bold text-sm text-[#5C3A21]">
+                  <span>로그인 계정: <span className="text-black font-extrabold">{currentUser.nickname}</span></span>
+                  <button
+                    onClick={handleSaveScore}
+                    disabled={isSaving || saveSuccess}
+                    className="bg-[#5C3A21] text-white px-4 py-2 rounded-xl font-bold text-xs hover:scale-105 transition-transform duration-200 disabled:opacity-50"
+                  >
+                    {saveSuccess ? "저장 완료! ✅" : "점수 저장 💾"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <span className="text-xs font-bold text-rose-600">🔒 로그인 후 명예의 전당에 점수를 저장할 수 있습니다.</span>
+                  <button
+                    onClick={onRequireLogin}
+                    className="w-full bg-[#5C3A21] text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 hover:scale-105 transition-transform"
+                  >
+                    <LogIn size={14} />
+                    <span>로그인하고 점수 저장하기</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
@@ -483,7 +478,7 @@ export default function JumpGameActivity({ onBack }: { onBack: () => void }) {
         )}
       </div>
 
-      {/* Hall of Fame Leaderboard (Top 3 Players) */}
+      {/* Hall of Fame Leaderboard */}
       <div className="w-full max-w-2xl bg-amber-50/80 border-2 border-[#5C3A21]/30 p-5 rounded-3xl flex flex-col items-center gap-4">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2 text-[#5C3A21] font-bold text-base sm:text-lg">

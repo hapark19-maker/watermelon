@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Database, RefreshCw, Trophy, Settings, AlertCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle2, XCircle, Database, RefreshCw, Trophy, Settings, AlertCircle, LogIn } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase";
 
 interface ScoreRecord {
@@ -12,9 +12,14 @@ interface ScoreRecord {
   created_at?: string;
 }
 
-export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) {
-  const [studentName, setStudentName] = useState("");
-  const [isNameSet, setIsNameSet] = useState(false);
+interface IntegerQuizProps {
+  onBack: () => void;
+  currentUser: { email: string; nickname: string } | null;
+  onRequireLogin: () => void;
+}
+
+export default function IntegerQuizActivity({ onBack, currentUser, onRequireLogin }: IntegerQuizProps) {
+  const [studentName, setStudentName] = useState(currentUser?.nickname || "");
 
   const [num1, setNum1] = useState(-5);
   const [num2, setNum2] = useState(3);
@@ -34,6 +39,12 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   const [showConfig, setShowConfig] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
   const [customKey, setCustomKey] = useState("");
+
+  useEffect(() => {
+    if (currentUser?.nickname) {
+      setStudentName(currentUser.nickname);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     let savedUrl = "";
@@ -127,7 +138,15 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
   };
 
   const handleSaveScoreToSupabase = async () => {
-    if (!studentName.trim()) {
+    // Check if user is logged in
+    if (!currentUser) {
+      alert("로그인 후 점수를 저장할 수 있습니다. 로그인 창으로 이동합니다!");
+      onRequireLogin();
+      return;
+    }
+
+    const nameToSave = currentUser.nickname || studentName.trim();
+    if (!nameToSave) {
       alert("학생 이름을 먼저 입력해주세요!");
       return;
     }
@@ -143,7 +162,7 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
       const client = getSupabaseClient(customUrl, customKey);
       const { error } = await client.from("student_scores").insert([
         {
-          student_name: studentName.trim(),
+          student_name: nameToSave,
           score: score,
           correct_count: correctCount,
         },
@@ -265,40 +284,28 @@ export default function IntegerQuizActivity({ onBack }: { onBack: () => void }) 
         </p>
       </div>
 
-      {/* Student Name Input Bar */}
-      {!isNameSet ? (
-        <div className="w-full max-w-md bg-pastel-pink/15 p-6 rounded-2xl border border-[#5C3A21]/30 flex flex-col items-center gap-4">
-          <label className="font-bold text-[#5C3A21] text-base">
-            학생 이름(닉네임)을 입력하세요:
-          </label>
-          <div className="flex gap-2 w-full">
-            <input
-              type="text"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="예: 홍길동"
-              className="flex-1 text-center font-bold p-3 rounded-full border-2 border-[#5C3A21] focus:outline-none focus:ring-2 focus:ring-pastel-pink text-black"
-            />
-            <button
-              onClick={() => {
-                if (studentName.trim()) setIsNameSet(true);
-              }}
-              className="bg-[#5C3A21] text-white px-5 py-3 rounded-full font-bold hover:scale-105 transition-transform duration-200"
-            >
-              시작하기
-            </button>
-          </div>
+      {/* Logged in User Status Bar */}
+      {currentUser ? (
+        <div className="flex items-center justify-between w-full max-w-md bg-emerald-50 p-3.5 rounded-2xl border-2 border-emerald-400">
+          <span className="font-bold text-emerald-800">
+            로그인된 학생: <span className="text-black font-extrabold">{currentUser.nickname}</span> 님
+          </span>
+          <span className="bg-emerald-600 text-white font-bold px-3 py-1 rounded-full text-sm">
+            현재 점수: {score}점 ({correctCount}개 맞힘)
+          </span>
         </div>
       ) : (
-        <div className="flex items-center justify-between w-full max-w-md bg-gray-100 p-3.5 rounded-2xl border border-[#5C3A21]/20">
-          <span className="font-bold text-[#5C3A21]">
-            학생: <span className="text-black">{studentName}</span> 님
+        <div className="w-full max-w-md bg-amber-50 p-4 rounded-2xl border-2 border-amber-400 flex items-center justify-between">
+          <span className="text-xs font-bold text-amber-800">
+            🔒 로그인이 필요합니다 (점수를 DB에 저장하려면 로그인하세요)
           </span>
-          <div className="flex items-center gap-2">
-            <span className="bg-pastel-pink text-white font-bold px-3 py-1 rounded-full text-sm">
-              현재 점수: {score}점 ({correctCount}개 맞힘)
-            </span>
-          </div>
+          <button
+            onClick={onRequireLogin}
+            className="flex items-center gap-1 bg-[#5C3A21] text-white px-3 py-1.5 rounded-full font-bold text-xs hover:scale-105 transition-transform"
+          >
+            <LogIn size={14} />
+            <span>로그인하기</span>
+          </button>
         </div>
       )}
 
