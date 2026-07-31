@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database, Zap, Bot } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database, Zap, Bot, LogIn, LogOut, User } from "lucide-react";
 import SieveOfEratosthenes from "@/components/SieveOfEratosthenes";
 import MathQuiz from "@/components/MathQuiz";
 import ShapeExplorer from "@/components/ShapeExplorer";
@@ -9,9 +9,32 @@ import WaterGraphActivity from "@/components/WaterGraphActivity";
 import IntegerQuizActivity from "@/components/IntegerQuizActivity";
 import JumpGameActivity from "@/components/JumpGameActivity";
 import MathChatbotActivity from "@/components/MathChatbotActivity";
+import AuthModal from "@/components/AuthModal";
 
 export default function Home() {
   const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | "jump-game" | "chatbot" | null>(null);
+
+  // User Auth State
+  const [currentUser, setCurrentUser] = useState<{ email: string; nickname: string } | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const email = localStorage.getItem("user_email");
+      const nickname = localStorage.getItem("user_nickname");
+      if (email && nickname) {
+        setCurrentUser({ email, nickname });
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user_email");
+      localStorage.removeItem("user_nickname");
+    }
+    setCurrentUser(null);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 gap-8">
@@ -26,15 +49,31 @@ export default function Home() {
           </div>
           <h1 className="text-2xl font-bold text-white">현아의 수학교실</h1>
         </div>
-        <nav>
-          <ul className="flex gap-4 pr-4">
-            <li
-              onClick={() => setActiveActivity(null)}
-              className="text-white font-bold hover:scale-105 transition-transform duration-200 cursor-pointer"
+
+        <nav className="flex items-center gap-3">
+          {currentUser ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-white/20 px-3.5 py-1.5 rounded-full text-white font-bold text-xs sm:text-sm">
+                <User size={16} />
+                <span>학생: {currentUser.nickname} 님</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 bg-white text-pastel-pink px-3.5 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-xs hover:scale-105 transition-transform duration-200"
+              >
+                <LogOut size={14} />
+                <span>로그아웃</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-1.5 bg-white text-pastel-pink px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md hover:scale-105 transition-transform duration-200"
             >
-              메인 홈
-            </li>
-          </ul>
+              <LogIn size={16} />
+              <span>로그인 / 회원가입</span>
+            </button>
+          )}
         </nav>
       </header>
 
@@ -46,7 +85,7 @@ export default function Home() {
             <section className="w-full bg-pastel-mint p-8 sm:p-10 rounded-3xl shadow-lg text-center flex flex-col items-center gap-3 border-none">
               <div className="bg-white/30 text-white font-bold px-4 py-1 rounded-full text-sm inline-flex items-center gap-1.5 shadow-xs">
                 <Sparkles size={16} />
-                <span>OpenAI 기반 AI 수학 선생님 챗봇 연동 완료</span>
+                <span>회원가입 & 로그인 지원</span>
               </div>
               <h2 className="text-3xl sm:text-4xl text-white font-bold tracking-wide">
                 안녕! 현아의 수학교실에 온 걸 환영해! 👋
@@ -216,7 +255,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 7: AI Math Tutor Chatbot (OpenAI API Integrated) */}
+              {/* Card 7: AI Math Tutor Chatbot */}
               <div
                 onClick={() => setActiveActivity("chatbot")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
@@ -264,6 +303,13 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* Auth Modal Popup */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(user) => setCurrentUser(user)}
+      />
 
       {/* Footer */}
       <footer className="w-full max-w-5xl text-center p-4 text-[#5C3A21] font-bold">
