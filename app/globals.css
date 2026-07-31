@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #fef9e7; /* Soft pastel background */
+  color: #333333;
+}
