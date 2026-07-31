@@ -1,18 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp } from "lucide-react";
+import { Calculator, Sparkles, ArrowRight, Award, Circle, ArrowLeft, TrendingUp, Database } from "lucide-react";
 import SieveOfEratosthenes from "@/components/SieveOfEratosthenes";
 import MathQuiz from "@/components/MathQuiz";
 import ShapeExplorer from "@/components/ShapeExplorer";
 import WaterGraphActivity from "@/components/WaterGraphActivity";
+import IntegerQuizActivity from "@/components/IntegerQuizActivity";
 
 export default function Home() {
-  const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | null>(null);
+  const [activeActivity, setActiveActivity] = useState<"sieve" | "quiz" | "shape" | "water-graph" | "integer-quiz" | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 gap-8">
-      {/* Header (No brown border, original pink style with white text) */}
+      {/* Header */}
       <header className="w-full max-w-5xl flex items-center justify-between p-4 bg-pastel-pink rounded-full shadow-md">
         <div
           className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform duration-200"
@@ -39,11 +40,11 @@ export default function Home() {
       <main className="w-full max-w-5xl flex flex-col items-center gap-8">
         {activeActivity === null ? (
           <>
-            {/* Hero Banner (Original green pastel style with white text, no brown border) */}
+            {/* Hero Banner */}
             <section className="w-full bg-pastel-mint p-8 sm:p-10 rounded-3xl shadow-lg text-center flex flex-col items-center gap-3 border-none">
               <div className="bg-white/30 text-white font-bold px-4 py-1 rounded-full text-sm inline-flex items-center gap-1.5 shadow-xs">
                 <Sparkles size={16} />
-                <span>2022 개정교육과정 완벽 지원</span>
+                <span>Supabase 데이터베이스 연동 완료</span>
               </div>
               <h2 className="text-3xl sm:text-4xl text-white font-bold tracking-wide">
                 안녕! 현아의 수학교실에 온 걸 환영해! 👋
@@ -61,9 +62,9 @@ export default function Home() {
               <span className="text-sm font-bold text-gray-600">카드를 누르면 시작돼요!</span>
             </div>
 
-            {/* Card News Grid: 3 columns per row with half-width brown border (border-2) */}
+            {/* Card News Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-              {/* Card 1: Sieve of Eratosthenes (Row 1, Col 1) */}
+              {/* Card 1: Sieve of Eratosthenes */}
               <div
                 onClick={() => setActiveActivity("sieve")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
@@ -88,7 +89,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 2: Math Quiz (Row 1, Col 2) */}
+              {/* Card 2: Math Quiz */}
               <div
                 onClick={() => setActiveActivity("quiz")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
@@ -113,7 +114,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 3: Shape Explorer (Row 1, Col 3) */}
+              {/* Card 3: Shape Explorer */}
               <div
                 onClick={() => setActiveActivity("shape")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
@@ -138,7 +139,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Card 4: Water Graph Activity (Row 2, Col 1 - Directly under Activity 1!) */}
+              {/* Card 4: Water Graph Activity */}
               <div
                 onClick={() => setActiveActivity("water-graph")}
                 className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
@@ -162,6 +163,31 @@ export default function Home() {
                   <ArrowRight size={18} />
                 </div>
               </div>
+
+              {/* Card 5: Integer Arithmetic Quiz (Supabase Database Integrated) */}
+              <div
+                onClick={() => setActiveActivity("integer-quiz")}
+                className="bg-white p-7 rounded-3xl border-2 border-[#5C3A21] shadow-lg flex flex-col justify-between gap-6 cursor-pointer hover:scale-105 transition-transform duration-200 group"
+              >
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="bg-pastel-pink/40 text-[#5C3A21] border border-[#5C3A21]/30 px-3.5 py-1 rounded-full text-xs font-bold">
+                      활동 5 (Supabase DB)
+                    </span>
+                    <Database size={24} className="text-pastel-pink" />
+                  </div>
+                  <h4 className="text-2xl font-bold tracking-wide text-black">
+                    정수의 사칙연산 왕 🧮
+                  </h4>
+                  <p className="text-gray-700 text-sm font-medium leading-relaxed">
+                    양수와 음수의 사칙연산 문제를 풀고 10점씩 받아서 Supabase DB에 점수를 저장하세요!
+                  </p>
+                </div>
+                <div className="flex items-center justify-between font-bold bg-pastel-pink/20 text-[#5C3A21] p-3.5 rounded-2xl border border-[#5C3A21]/30 group-hover:bg-[#5C3A21] group-hover:text-white transition-colors duration-200">
+                  <span>퀴즈 풀고 점수 저장하기</span>
+                  <ArrowRight size={18} />
+                </div>
+              </div>
             </div>
           </>
         ) : (
@@ -180,6 +206,7 @@ export default function Home() {
             {activeActivity === "quiz" && <MathQuiz onBack={() => setActiveActivity(null)} />}
             {activeActivity === "shape" && <ShapeExplorer onBack={() => setActiveActivity(null)} />}
             {activeActivity === "water-graph" && <WaterGraphActivity onBack={() => setActiveActivity(null)} />}
+            {activeActivity === "integer-quiz" && <IntegerQuizActivity onBack={() => setActiveActivity(null)} />}
           </div>
         )}
       </main>
