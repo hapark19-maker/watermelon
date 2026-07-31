@@ -1,10 +1,11 @@
 import { Calculator } from "lucide-react";
+import SieveOfEratosthenes from "@/components/SieveOfEratosthenes";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between p-4">
+    <div className="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 gap-8">
       {/* Header */}
-      <header className="w-full max-w-4xl flex items-center justify-between p-4 bg-pastel-pink rounded-full shadow-md mb-8">
+      <header className="w-full max-w-4xl flex items-center justify-between p-4 bg-pastel-pink rounded-full shadow-md">
         <div className="flex items-center gap-2">
           <div className="bg-white p-2 rounded-full shadow-sm text-pastel-pink">
             <Calculator size={24} />
@@ -19,22 +20,24 @@ export default function Home() {
         </nav>
       </header>
 
-      {/* Main Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center gap-8 w-full max-w-4xl bg-pastel-mint p-12 rounded-3xl shadow-lg border-none">
-        <h2 className="text-5xl text-white font-bold tracking-wide">
+      {/* Hero Welcome Section */}
+      <section className="w-full max-w-4xl bg-pastel-mint p-8 sm:p-10 rounded-3xl shadow-lg text-center flex flex-col items-center gap-4">
+        <h2 className="text-4xl sm:text-5xl text-white font-bold tracking-wide">
           안녕! 👋
         </h2>
-        <p className="text-xl text-white/90 font-medium">
+        <p className="text-lg sm:text-xl text-white/90 font-medium">
           현아의 수학교실에 온 걸 환영해!<br />
-          우리 같이 재미있게 수학을 배워볼까?
+          아래 탐험대에서 100 이하의 소수(에라토스테네스의 체)를 같이 찾아보자!
         </p>
-        <button className="bg-pastel-blue text-white px-8 py-4 rounded-full text-xl shadow-md hover:scale-105 transition-transform duration-200 border-none font-bold">
-          시작하기
-        </button>
+      </section>
+
+      {/* Sieve of Eratosthenes Main Interactive Component */}
+      <main className="w-full flex justify-center">
+        <SieveOfEratosthenes />
       </main>
 
       {/* Footer */}
-      <footer className="w-full max-w-4xl text-center p-4 mt-8 text-pastel-blue font-bold">
+      <footer className="w-full max-w-4xl text-center p-4 text-pastel-blue font-bold">
         <p>© {new Date().getFullYear()} 현아의 수학교실. All rights reserved.</p>
       </footer>
     </div>
