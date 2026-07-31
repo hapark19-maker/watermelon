@@ -12,9 +12,9 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
+  const [studentIdNumber, setStudentIdNumber] = useState(""); // 학번
   const [password, setPassword] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [name, setName] = useState(""); // 이름
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -22,39 +22,43 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setMessage({ type: "error", text: "이메일과 비밀번호를 입력해주세요!" });
+    if (!studentIdNumber || !password) {
+      setMessage({ type: "error", text: "학번과 비밀번호를 입력해주세요!" });
       return;
     }
-    if (isSignUp && !nickname) {
-      setMessage({ type: "error", text: "학생 닉네임/이름을 입력해주세요!" });
+    if (isSignUp && !name) {
+      setMessage({ type: "error", text: "이름을 입력해주세요!" });
       return;
     }
 
     setLoading(true);
     setMessage(null);
 
+    // Convert student ID number to email format for Supabase Auth compatibility
+    const cleanStudentId = studentIdNumber.trim().replace(/\s+/g, "");
+    const emailFormat = cleanStudentId.includes("@") ? cleanStudentId : `${cleanStudentId}@student.math`;
+    const displayName = name.trim() || cleanStudentId;
+
     try {
       if (isSignUp) {
         // Sign Up with Supabase Auth
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: emailFormat,
           password: password,
           options: {
-            data: { nickname: nickname.trim() },
+            data: { nickname: displayName },
           },
         });
 
         if (error) {
           setMessage({ type: "error", text: `회원가입 실패: ${error.message}` });
         } else {
-          const userNick = nickname.trim() || email.split("@")[0];
-          setMessage({ type: "success", text: "회원가입 성공! 바로 로그인할 수 있습니다." });
+          setMessage({ type: "success", text: "회원가입 성공! 로그인되었습니다." });
           if (typeof window !== "undefined") {
-            localStorage.setItem("user_email", email.trim());
-            localStorage.setItem("user_nickname", userNick);
+            localStorage.setItem("user_email", cleanStudentId);
+            localStorage.setItem("user_nickname", displayName);
           }
-          onLoginSuccess({ email: email.trim(), nickname: userNick });
+          onLoginSuccess({ email: cleanStudentId, nickname: displayName });
           setTimeout(() => {
             onClose();
           }, 1000);
@@ -62,29 +66,28 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
       } else {
         // Sign In with Supabase Auth
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: emailFormat,
           password: password,
         });
 
         if (error) {
-          // Local storage fallback for smooth student login if auth is disabled in Supabase
-          const fallbackNick = email.split("@")[0];
+          // Local storage fallback for smooth student login
           if (typeof window !== "undefined") {
-            localStorage.setItem("user_email", email.trim());
-            localStorage.setItem("user_nickname", fallbackNick);
+            localStorage.setItem("user_email", cleanStudentId);
+            localStorage.setItem("user_nickname", displayName);
           }
-          onLoginSuccess({ email: email.trim(), nickname: fallbackNick });
+          onLoginSuccess({ email: cleanStudentId, nickname: displayName });
           setMessage({ type: "success", text: "로그인 되었습니다!" });
           setTimeout(() => {
             onClose();
           }, 800);
         } else {
-          const userNick = data.user?.user_metadata?.nickname || email.split("@")[0];
+          const userNick = data.user?.user_metadata?.nickname || displayName;
           if (typeof window !== "undefined") {
-            localStorage.setItem("user_email", email.trim());
+            localStorage.setItem("user_email", cleanStudentId);
             localStorage.setItem("user_nickname", userNick);
           }
-          onLoginSuccess({ email: email.trim(), nickname: userNick });
+          onLoginSuccess({ email: cleanStudentId, nickname: userNick });
           setMessage({ type: "success", text: "로그인 성공!" });
           setTimeout(() => {
             onClose();
@@ -113,7 +116,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         <div className="text-center flex flex-col items-center gap-2">
           <div className="flex items-center gap-1.5 bg-pastel-pink/30 px-3.5 py-1 rounded-full text-[#5C3A21] font-bold text-xs">
             <Sparkles size={14} />
-            <span>현아의 수학교실 통합 계정</span>
+            <span>현아의 수학교실 회원가입</span>
           </div>
           <h3 className="text-2xl font-bold text-[#5C3A21]">
             {isSignUp ? "신규 학생 회원가입 ✨" : "학생 로그인 🔑"}
@@ -152,12 +155,12 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {isSignUp && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-[#5C3A21]">학생 닉네임 / 이름</label>
+              <label className="text-xs font-bold text-[#5C3A21]">이름</label>
               <input
                 type="text"
                 placeholder="예: 김수학"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="p-3 rounded-xl border-2 border-[#5C3A21] text-sm text-black font-medium focus:outline-none focus:ring-2 focus:ring-pastel-pink"
                 required
               />
@@ -165,12 +168,12 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-[#5C3A21]">이메일 주소</label>
+            <label className="text-xs font-bold text-[#5C3A21]">학번</label>
             <input
-              type="email"
-              placeholder="student@math.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="예: 10101"
+              value={studentIdNumber}
+              onChange={(e) => setStudentIdNumber(e.target.value)}
               className="p-3 rounded-xl border-2 border-[#5C3A21] text-sm text-black font-medium focus:outline-none focus:ring-2 focus:ring-pastel-pink"
               required
             />
