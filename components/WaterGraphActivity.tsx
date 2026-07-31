@@ -13,6 +13,8 @@ interface StageInfo {
   title: string;
   difficulty: string;
   description: string;
+  maxTimeSeconds: number; // Total duration in seconds for graph X-axis
+  maxHeightCm: number; // Total height in cm for graph Y-axis
   containerShape: "cylinder" | "two-stage" | "cone" | "hourglass";
   correctPoints: Point[]; // Points in normalized coordinates (0 to 1)
   mathExplanation: string;
@@ -24,18 +26,22 @@ const STAGES: StageInfo[] = [
     title: "1단계: 원기둥 모양 그릇",
     difficulty: "★☆☆☆ (쉬움)",
     description: "폭이 일정한 원기둥 모양 그릇에 일정한 속도로 물을 채웁니다.",
+    maxTimeSeconds: 10,
+    maxHeightCm: 10,
     containerShape: "cylinder",
     correctPoints: [
       { x: 0, y: 0 },
       { x: 1, y: 1 },
     ],
-    mathExplanation: "그릇의 폭이 일정하므로 물의 높이는 시간에 비례하여 일정하게 올라갑니다. 따라서 그래프는 직선 모양이 됩니다.",
+    mathExplanation: "그릇의 폭이 일정하므로 물의 높이는 시간에 비례하여 일정하게 올라갑니다. 따라서 그래프는 기울기가 일정한 직선 모양이 됩니다.",
   },
   {
     id: 2,
     title: "2단계: 2단 원기둥 그릇",
     difficulty: "★★☆☆ (보통)",
     description: "아래쪽은 넓고, 위쪽은 좁은 2단계 원기둥 모양 그릇에 물을 채웁니다.",
+    maxTimeSeconds: 10,
+    maxHeightCm: 10,
     containerShape: "two-stage",
     correctPoints: [
       { x: 0, y: 0 },
@@ -49,6 +55,8 @@ const STAGES: StageInfo[] = [
     title: "3단계: 위가 좁아지는 원뿔 모양",
     difficulty: "★★★☆ (어려움)",
     description: "위로 갈수록 폭이 점점 좁아지는 모양의 그릇에 물을 채웁니다.",
+    maxTimeSeconds: 10,
+    maxHeightCm: 10,
     containerShape: "cone",
     correctPoints: [
       { x: 0, y: 0 },
@@ -64,6 +72,8 @@ const STAGES: StageInfo[] = [
     title: "4단계: 호아(모래시계) 모양",
     difficulty: "★★★★ (최고 난이도)",
     description: "중간이 오목하게 좁고 위아래가 넓은 모래시계 모양 그릇에 물을 채웁니다.",
+    maxTimeSeconds: 10,
+    maxHeightCm: 10,
     containerShape: "hourglass",
     correctPoints: [
       { x: 0, y: 0 },
@@ -92,7 +102,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
     let animationFrame: number;
     if (isFilling) {
       const startTime = Date.now();
-      const duration = 4000; // 4 seconds
+      const duration = stage.maxTimeSeconds * 1000;
 
       const animate = () => {
         const elapsed = Date.now() - startTime;
@@ -109,7 +119,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
       animationFrame = requestAnimationFrame(animate);
     }
     return () => cancelAnimationFrame(animationFrame);
-  }, [isFilling]);
+  }, [isFilling, stage.maxTimeSeconds]);
 
   const startWaterAnimation = () => {
     setWaterLevel(0);
@@ -126,7 +136,6 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
     const rawX = (clientX - rect.left) / rect.width;
     const rawY = (clientY - rect.top) / rect.height;
 
-    // Convert SVG Y (top=0, bottom=1) to Math Graph Y (bottom=0, top=1)
     const normX = Math.max(0, Math.min(1, rawX));
     const normY = Math.max(0, Math.min(1, 1 - rawY));
 
@@ -172,13 +181,11 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
     const h = waterLevel; // 0 to 1
 
     return (
-      <svg className="w-48 h-64 border-4 border-[#5C3A21] rounded-2xl bg-white shadow-md" viewBox="0 0 200 260">
+      <svg className="w-48 h-64 border-2 border-[#5C3A21] rounded-2xl bg-white shadow-md" viewBox="0 0 200 260">
         {/* Stage 1: Cylinder */}
         {stage.containerShape === "cylinder" && (
           <g>
-            {/* Outline */}
             <rect x="50" y="30" width="100" height="200" fill="#f8fafc" stroke="#5C3A21" strokeWidth="4" rx="4" />
-            {/* Water */}
             <rect
               x="52"
               y={230 - h * 196}
@@ -190,19 +197,16 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           </g>
         )}
 
-        {/* Stage 2: Two-stage Cylinder (Wide bottom, Narrow top) */}
+        {/* Stage 2: Two-stage Cylinder */}
         {stage.containerShape === "two-stage" && (
           <g>
-            {/* Outer Container Path */}
             <path
               d="M 30 230 L 30 130 L 70 130 L 70 30 L 130 30 L 130 130 L 170 130 L 170 230 Z"
               fill="#f8fafc"
               stroke="#5C3A21"
               strokeWidth="4"
             />
-            {/* Water Level Fill Logic */}
             {h <= 0.4 ? (
-              // Filling lower section (height 100px)
               <rect
                 x="32"
                 y={230 - (h / 0.4) * 98}
@@ -212,7 +216,6 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
                 opacity="0.85"
               />
             ) : (
-              // Lower full + upper section filling
               <g>
                 <rect x="32" y="132" width="136" height="96" fill="#94C1D7" opacity="0.85" />
                 <rect
@@ -228,7 +231,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           </g>
         )}
 
-        {/* Stage 3: Cone (Wide bottom, narrow top) */}
+        {/* Stage 3: Cone */}
         {stage.containerShape === "cone" && (
           <g>
             <path
@@ -237,7 +240,6 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
               stroke="#5C3A21"
               strokeWidth="4"
             />
-            {/* Water polygon calculation */}
             {h > 0 && (
               <polygon
                 points={`
@@ -253,7 +255,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           </g>
         )}
 
-        {/* Stage 4: Hourglass / Vase */}
+        {/* Stage 4: Hourglass */}
         {stage.containerShape === "hourglass" && (
           <g>
             <path
@@ -264,7 +266,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
             />
             {h > 0 && (
               <path
-                d={`M 30 230 Q 100 130 170 230 Z`} // Simplified visual fill clip
+                d={`M 30 230 Q 100 130 170 230 Z`}
                 fill="#94C1D7"
                 opacity="0.85"
               />
@@ -272,7 +274,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           </g>
         )}
 
-        {/* Water Spout at Top */}
+        {/* Water Spout */}
         <path d="M 90 5 L 110 5 L 105 25 L 95 25 Z" fill="#94C1D7" />
         {isFilling && <rect x="97" y="25" width="6" height="205" fill="#94C1D7" opacity="0.6" className="animate-pulse" />}
       </svg>
@@ -291,8 +293,10 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
       .join(" ");
   };
 
+  const currentTimeSeconds = (waterLevel * stage.maxTimeSeconds).toFixed(1);
+
   return (
-    <div className="w-full max-w-5xl bg-white p-6 sm:p-8 rounded-3xl border-4 border-[#5C3A21] shadow-xl flex flex-col items-center gap-6">
+    <div className="w-full max-w-5xl bg-white p-6 sm:p-8 rounded-3xl border-2 border-[#5C3A21] shadow-xl flex flex-col items-center gap-6">
       {/* Top Header */}
       <div className="w-full flex items-center justify-between">
         <button
@@ -303,7 +307,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           <span>카드뉴스 메인으로</span>
         </button>
 
-        <div className="flex items-center gap-2 bg-pastel-pink border-2 border-[#5C3A21] text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
+        <div className="flex items-center gap-2 bg-pastel-pink border border-[#5C3A21]/30 text-white px-4 py-1.5 rounded-full font-bold text-sm shadow-sm">
           <Award size={18} />
           <span>중1-2022개정 교육과정 [변수와 그래프]</span>
         </div>
@@ -332,7 +336,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
                 handleClear();
                 setWaterLevel(0);
               }}
-              className={`px-3.5 py-1.5 rounded-full font-bold text-xs sm:text-sm border-2 border-[#5C3A21] transition-all duration-200 ${
+              className={`px-3.5 py-1.5 rounded-full font-bold text-xs sm:text-sm border border-[#5C3A21] transition-all duration-200 ${
                 currentStageIdx === idx
                   ? "bg-[#5C3A21] text-white scale-105 shadow-md"
                   : "bg-white text-[#5C3A21] hover:bg-pastel-pink/20"
@@ -345,7 +349,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Activity Main Section (Left Container / Right Graph) */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-gray-50/80 p-6 rounded-3xl border-2 border-[#5C3A21]/20">
+      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-gray-50/80 p-6 rounded-3xl border border-[#5C3A21]/20">
         {/* Left Side: Water Container Simulation */}
         <div className="flex flex-col items-center gap-4">
           <div className="flex items-center gap-2 text-[#5C3A21] font-bold text-base">
@@ -355,21 +359,27 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
 
           {renderContainerSvg()}
 
-          <button
-            onClick={startWaterAnimation}
-            disabled={isFilling}
-            className="flex items-center gap-2 bg-pastel-blue text-[#5C3A21] border-2 border-[#5C3A21] px-5 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200 disabled:opacity-50"
-          >
-            <Play size={18} />
-            <span>{isFilling ? "물 채우는 중..." : "물 채우기 시뮬레이션 💧"}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={startWaterAnimation}
+              disabled={isFilling}
+              className="flex items-center gap-2 bg-pastel-blue text-[#5C3A21] border border-[#5C3A21] px-5 py-2.5 rounded-full font-bold shadow-md hover:scale-105 transition-transform duration-200 disabled:opacity-50"
+            >
+              <Play size={18} />
+              <span>{isFilling ? "물 채우는 중..." : "물 채우기 시뮬레이션 💧"}</span>
+            </button>
+
+            <span className="text-sm font-bold text-[#5C3A21] bg-white px-3 py-1.5 rounded-full border border-[#5C3A21]/30">
+              경과 시간: {currentTimeSeconds}초
+            </span>
+          </div>
         </div>
 
-        {/* Right Side: Graph Drawing Canvas */}
+        {/* Right Side: Graph Drawing Canvas with Explicit Time Ticks */}
         <div className="flex flex-col items-center gap-4 w-full">
           <div className="flex items-center justify-between w-full">
             <span className="text-sm font-bold text-[#5C3A21]">
-              그래프 위에 드래그하여 예측한 선을 그려보세요! ✏️
+              드래그하여 높이 변화 그래프를 그려보세요! ✏️
             </span>
             <button
               onClick={handleClear}
@@ -380,22 +390,21 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* SVG Graph Drawing Container */}
-          <div className="relative w-full aspect-square max-w-[320px] bg-white border-3 border-[#5C3A21] rounded-2xl shadow-inner select-none">
-            {/* Axis Labels */}
-            <div className="absolute left-2 top-2 text-xs font-bold text-[#5C3A21]">
+          <div className="relative w-full aspect-square max-w-[340px] bg-white border-2 border-[#5C3A21] rounded-2xl shadow-inner select-none p-2">
+            {/* Y-axis Label */}
+            <div className="absolute left-2 top-2 text-xs font-bold text-[#5C3A21] bg-white/80 px-1 rounded">
               높이 (cm)
             </div>
-            <div className="absolute right-2 bottom-2 text-xs font-bold text-[#5C3A21]">
+
+            {/* X-axis Label */}
+            <div className="absolute right-2 bottom-2 text-xs font-bold text-[#5C3A21] bg-white/80 px-1 rounded">
               시간 (초)
             </div>
-            <div className="absolute left-2 bottom-2 text-xs font-bold text-gray-400">
-              O (원점)
-            </div>
 
-            {/* Grid background lines */}
+            {/* SVG Canvas */}
             <svg
               ref={svgRef}
-              className="w-full h-full cursor-crosshair touch-none"
+              className="w-full h-full cursor-crosshair touch-none overflow-visible"
               viewBox="0 0 300 300"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
@@ -405,18 +414,37 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
               onTouchEnd={handleMouseUp}
             >
               {/* Grid Lines */}
-              <line x1="0" y1="75" x2="300" y2="75" stroke="#e2e8f0" strokeDasharray="4 4" />
-              <line x1="0" y1="150" x2="300" y2="150" stroke="#e2e8f0" strokeDasharray="4 4" />
-              <line x1="0" y1="225" x2="300" y2="225" stroke="#e2e8f0" strokeDasharray="4 4" />
-              <line x1="75" y1="0" x2="75" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
-              <line x1="150" y1="0" x2="150" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
-              <line x1="225" y1="0" x2="225" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="0" y1="60" x2="300" y2="60" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="0" y1="120" x2="300" y2="120" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="0" y1="180" x2="300" y2="180" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="0" y1="240" x2="300" y2="240" stroke="#e2e8f0" strokeDasharray="4 4" />
+
+              <line x1="60" y1="0" x2="60" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="120" y1="0" x2="120" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="180" y1="0" x2="180" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
+              <line x1="240" y1="0" x2="240" y2="300" stroke="#e2e8f0" strokeDasharray="4 4" />
+
+              {/* Y-axis Explicit Height Ticks (0cm ~ 10cm) */}
+              <text x="-8" y="304" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="end">0cm</text>
+              <text x="-8" y="244" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="end">2cm</text>
+              <text x="-8" y="184" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="end">4cm</text>
+              <text x="-8" y="124" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="end">6cm</text>
+              <text x="-8" y="64" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="end">8cm</text>
+              <text x="-8" y="10" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="end">10cm</text>
+
+              {/* X-axis Explicit Time Ticks (0초, 2초, 4초, 6초, 8초, 10초) */}
+              <text x="0" y="318" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="middle">0초</text>
+              <text x="60" y="318" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="middle">2초</text>
+              <text x="120" y="318" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="middle">4초</text>
+              <text x="180" y="318" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="middle">6초</text>
+              <text x="240" y="318" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="middle">8초</text>
+              <text x="300" y="318" fontSize="10" fontWeight="bold" fill="#5C3A21" textAnchor="middle">10초</text>
 
               {/* Axes */}
-              <line x1="0" y1="300" x2="300" y2="300" stroke="#5C3A21" strokeWidth="4" />
-              <line x1="0" y1="0" x2="0" y2="300" stroke="#5C3A21" strokeWidth="4" />
+              <line x1="0" y1="300" x2="300" y2="300" stroke="#5C3A21" strokeWidth="3" />
+              <line x1="0" y1="0" x2="0" y2="300" stroke="#5C3A21" strokeWidth="3" />
 
-              {/* User Drawn Line (Blue/Dark) */}
+              {/* User Drawn Line */}
               {userPoints.length > 1 && (
                 <path
                   d={pointsToSvgPath(userPoints)}
@@ -428,7 +456,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
                 />
               )}
 
-              {/* Correct Answer Graph Overlay (Pastel Pink Dashed Line) */}
+              {/* Correct Answer Graph Overlay */}
               {showAnswer && (
                 <path
                   d={pointsToSvgPath(stage.correctPoints)}
@@ -443,10 +471,10 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 w-full max-w-[320px]">
+          <div className="flex gap-3 w-full max-w-[340px] mt-2">
             <button
               onClick={handleCheckAnswer}
-              className="flex-1 bg-pastel-pink border-2 border-[#5C3A21] text-white py-2.5 rounded-full font-bold text-sm shadow-md hover:scale-105 transition-transform duration-200"
+              className="flex-1 bg-pastel-pink border border-[#5C3A21] text-white py-2.5 rounded-full font-bold text-sm shadow-md hover:scale-105 transition-transform duration-200"
             >
               정답 확인하기! 🎯
             </button>
@@ -457,7 +485,7 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
                   handleClear();
                   setWaterLevel(0);
                 }}
-                className="bg-pastel-mint border-2 border-[#5C3A21] text-[#5C3A21] px-4 py-2.5 rounded-full font-bold text-sm shadow-md hover:scale-105 transition-transform duration-200 flex items-center gap-1"
+                className="bg-pastel-mint border border-[#5C3A21] text-[#5C3A21] px-4 py-2.5 rounded-full font-bold text-sm shadow-md hover:scale-105 transition-transform duration-200 flex items-center gap-1"
               >
                 <span>다음 단계</span>
                 <ChevronRight size={16} />
@@ -467,9 +495,9 @@ export default function WaterGraphActivity({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      {/* Math Explanation Banner (Shown when 정답 확인하기 is clicked) */}
+      {/* Math Explanation Banner */}
       {showAnswer && (
-        <div className="w-full bg-pastel-pink/20 border-3 border-[#5C3A21] p-6 rounded-3xl flex flex-col gap-3 animate-fade-in">
+        <div className="w-full bg-pastel-pink/20 border-2 border-[#5C3A21] p-6 rounded-3xl flex flex-col gap-3 animate-fade-in">
           <div className="flex items-center gap-2 text-[#5C3A21] font-bold text-lg">
             <CheckCircle2 size={24} className="text-pastel-pink" />
             <span>정답 그래프 확인 & 수학 개념 해설 💡</span>
